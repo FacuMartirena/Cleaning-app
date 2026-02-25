@@ -1,0 +1,39 @@
+---
+description: Arquitectura Flutter + GetX del proyecto (módulos, bindings, controllers, views)
+alwaysApply: true
+---
+
+# Arquitectura Flutter + GetX
+
+Sigue siempre este patrón al crear o modificar features.
+
+## Estructura por módulo
+
+Cada feature vive bajo `lib/modules/<feature>/`:
+
+```
+modules/<feature>/
+├── bindings/<feature>_binding.dart   → Bindings con Get.lazyPut del Controller
+├── controllers/<feature>_controller.dart
+├── views/<feature>_view.dart        → GetView<FeatureController>, solo UI
+└── widgets/                        → widgets reutilizables del módulo (StatelessWidget)
+```
+
+## Reglas estrictas
+
+- **Views**: `GetView<XxxController>`. Cero lógica: no setState, no GetStorage, no TextEditingController. Solo referencias a `controller.xxx`.
+- **Controllers**: `extends GetxController`. TextEditingController y su dispose en `onClose()`. Variables reactivas con `.obs`. Lógica de negocio y acceso a GetStorage/API aquí.
+- **Bindings**: `extends Bindings`, `Get.lazyPut<XxxController>(() => XxxController())`.
+- **Rutas**: En `app_route.dart`, usar `GetPage(..., page: () => const XxxView(), binding: XxxBinding())`.
+- **Widgets**: No definir widgets como funciones dentro del State/View. Crear `StatelessWidget` en `modules/<feature>/widgets/` o en `core/widgets/` si son globales.
+- **Colores/constantes**: En `core/constants/app_colors.dart` (y similares). No hardcodear colores en widgets.
+- **Reactividad**: Usar `Obx()` o `GetX()` cuando la UI dependa de `.obs` del controller.
+
+## Core
+
+- `lib/core/constants/app_colors.dart` — colores (primary, hint, gradientStart, gradientEnd, etc.).
+- Assets en `assets/` (raíz del proyecto), declarados en `pubspec.yaml`.
+
+## Ejemplo de referencia
+
+Ver módulo `lib/modules/login/` (LoginController, LoginBinding, LoginView, LoginInputField).
