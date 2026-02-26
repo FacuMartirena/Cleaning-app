@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:bo_cleaning/config/router/app_routes.dart';
 import 'package:bo_cleaning/modules/login/bindings/login_binding.dart';
 import 'package:bo_cleaning/modules/login/views/login_view.dart';
+import 'package:bo_cleaning/modules/orders/bindings/orders_binding.dart';
+import 'package:bo_cleaning/modules/orders/views/orders_view.dart';
 import 'package:bo_cleaning/modules/products/bindings/products_binding.dart';
 import 'package:bo_cleaning/modules/products/views/products_view.dart';
 import 'package:bo_cleaning/modules/splash/bindings/splash_binding.dart';
@@ -24,6 +26,11 @@ abstract class AppPages {
       name: AppRoutes.products,
       page: () => const ProductsView(),
       binding: ProductsBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.orders,
+      page: () => const OrdersView(),
+      binding: OrdersBinding(),
     ),
   ];
 }

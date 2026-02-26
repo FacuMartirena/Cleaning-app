@@ -9,6 +9,12 @@ abstract class Globals {
   static const String authCurrentUser = '/auth/current-user';
   static const String authRefreshToken = '/auth/refresh-token';
 
+  // --- Products ---
+  static const String productsPath = '/products';
+
+  // --- Orders ---
+  static const String ordersPath = '/orders';
+
   // --- Storage keys ---
   static const String storageToken = 'token';
   static const String storageUser = 'user';
@@ -24,4 +30,6 @@ abstract class Globals {
   static const Color white = Color(0xFFFFFFFF);
   static const Color transparent = Color(0x00000000);
   static const Color shadow = Color(0x14000000); // black 8% opacity
+  static const Color error = Color(0xFFE53935);
+  static const Color success = Color(0xFF43A047);
 }
