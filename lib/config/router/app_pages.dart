@@ -1,0 +1,29 @@
+import 'package:get/get.dart';
+
+import 'package:bo_cleaning/config/router/app_routes.dart';
+import 'package:bo_cleaning/modules/login/bindings/login_binding.dart';
+import 'package:bo_cleaning/modules/login/views/login_view.dart';
+import 'package:bo_cleaning/modules/products/bindings/products_binding.dart';
+import 'package:bo_cleaning/modules/products/views/products_view.dart';
+import 'package:bo_cleaning/modules/splash/bindings/splash_binding.dart';
+import 'package:bo_cleaning/modules/splash/views/splash_view.dart';
+
+abstract class AppPages {
+  static final List<GetPage<void>> pages = [
+    GetPage(
+      name: AppRoutes.splash,
+      page: () => const SplashView(),
+      binding: SplashBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.login,
+      page: () => const LoginView(),
+      binding: LoginBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.products,
+      page: () => const ProductsView(),
+      binding: ProductsBinding(),
+    ),
+  ];
+}

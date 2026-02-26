@@ -16,9 +16,12 @@ abstract class Globals {
   // --- Headers ---
   static String authorizationBearer(String token) => 'Bearer $token';
 
-  // --- Styles ---
+  // --- Colors ---
   static const Color primary = Color(0xFF006EAA);
   static const Color hint = Color(0xFFB0BEC5);
   static const Color gradientStart = Color(0xFF1DA2FC);
   static const Color gradientEnd = Color(0xFF42D0FD);
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color transparent = Color(0x00000000);
+  static const Color shadow = Color(0x14000000); // black 8% opacity
 }

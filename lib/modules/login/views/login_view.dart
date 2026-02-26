@@ -98,7 +98,7 @@ class LoginView extends GetView<LoginController> {
                   () => SizedBox(
                     width: double.infinity,
                     child: Material(
-                      color: Colors.transparent,
+                      color: Globals.transparent,
                       child: InkWell(
                         onTap: controller.isLoading.value
                             ? null
@@ -123,14 +123,14 @@ class LoginView extends GetView<LoginController> {
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
-                                      color: Colors.white,
+                                      color: Globals.white,
                                       strokeWidth: 2,
                                     ),
                                   )
                                 : const Text(
                                     'Login',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: Globals.white,
                                       fontWeight: FontWeight.w400,
                                       fontSize: 16,
                                     ),

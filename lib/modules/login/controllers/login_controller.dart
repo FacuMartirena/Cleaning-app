@@ -1,14 +1,22 @@
+import 'package:bo_cleaning/modules/login/services/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
-import 'package:bo_cleaning/config/router/app_route.dart';
+import 'package:bo_cleaning/config/router/app_routes.dart';
 import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/user_model.dart';
 import 'package:bo_cleaning/modules/login/services/auth_service.dart';
 
 class LoginController extends GetxController {
-  final _authService = Get.find<AuthService>();
+  final AuthService _authService;
+  final AuthProvider _authProvider;
+
+  LoginController({
+    required AuthService authService,
+    required AuthProvider authProvider,
+  }) : _authService = authService,
+       _authProvider = authProvider;
 
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
@@ -16,7 +24,7 @@ class LoginController extends GetxController {
   final obscurePassword = true.obs;
   final isLoading = false.obs;
 
-  void toggleObscure() => obscurePassword.value = !obscurePassword.value;
+  void toggleObscure() => obscurePassword.toggle();
 
   Future<void> login() async {
     final email = emailController.text.trim();
@@ -34,7 +42,7 @@ class LoginController extends GetxController {
     isLoading.value = true;
 
     try {
-      final response = await _authService.loginRequest(
+      final response = await _authProvider.login(
         email: email,
         password: password,
       );
@@ -45,13 +53,13 @@ class LoginController extends GetxController {
           response.body['user'] as Map<String, dynamic>,
         );
 
-        final box = GetStorage('User');
-        box.write(Globals.storageToken, token);
-        box.write(Globals.storageUser, user.toJson());
+        _authService.saveToken(token);
+        _authService.saveUser(user);
 
         Get.offAllNamed(AppRoutes.products);
       } else {
-        final message = response.body?['message'] ?? 'Credenciales incorrectas.';
+        final message =
+            response.body?['message'] ?? 'Credenciales incorrectas.';
         Get.snackbar(
           'Error al iniciar sesión',
           message.toString(),
