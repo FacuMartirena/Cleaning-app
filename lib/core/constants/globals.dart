@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 abstract class Globals {
   // --- API Base URL ---
+  static const String serverBaseUrl = 'http://10.0.2.2:3000';
   static const String apiBaseUrl = 'http://10.0.2.2:3000/api';
 
   // --- Auth endpoints ---
