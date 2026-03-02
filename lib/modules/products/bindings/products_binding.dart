@@ -11,7 +11,9 @@ class ProductsBinding extends Bindings {
   void dependencies() {
     Get.lazyPut<AuthService>(() => AuthService());
     Get.lazyPut<ProductsProvider>(() => ProductsProvider());
-    Get.lazyPut<ProductsController>(() => ProductsController());
+    if (!Get.isRegistered<ProductsController>()) {
+      Get.put<ProductsController>(ProductsController(), permanent: true);
+    }
     Get.lazyPut<OrdersProvider>(() => OrdersProvider());
     Get.put<OrdersController>(OrdersController(), permanent: true);
   }
