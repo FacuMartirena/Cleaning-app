@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/order_item_model.dart';
+import 'package:bo_cleaning/core/models/order_model.dart' show OrderHistoryItemModel;
+import 'package:bo_cleaning/core/widgets/app_drawer.dart';
 import 'package:bo_cleaning/modules/orders/controllers/orders_controller.dart';
 import 'package:bo_cleaning/modules/products/controllers/products_controller.dart';
 
@@ -11,71 +13,102 @@ class OrdersView extends GetView<OrdersController> {
 
   @override
   Widget build(BuildContext context) {
-    final productsCtrl = Get.find<ProductsController>();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi pedido'),
+        title: const Text('Pedidos'),
         backgroundColor: Globals.primary,
         foregroundColor: Globals.white,
-        actions: [
-          Obx(
-            () => controller.items.isNotEmpty
-                ? TextButton.icon(
-                    onPressed: () => _confirmClear(context),
-                    icon: const Icon(Icons.delete_outline, color: Globals.white),
-                    label: const Text(
-                      'Limpiar',
-                      style: TextStyle(color: Globals.white),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
+        bottom: TabBar(
+          controller: controller.tabController,
+          indicatorColor: Globals.white,
+          labelColor: Globals.white,
+          unselectedLabelColor: Globals.white.withValues(alpha: 0.6),
+          tabs: const [
+            Tab(icon: Icon(Icons.shopping_cart_outlined), text: 'Mi pedido'),
+            Tab(icon: Icon(Icons.history), text: 'Historial'),
+          ],
+        ),
+      ),
+      drawer: const AppDrawer(),
+      body: TabBarView(
+        controller: controller.tabController,
+        children: [
+          _CartTab(ctrl: controller),
+          _HistoryTab(ctrl: controller),
         ],
       ),
-      body: Obx(() {
-        if (controller.items.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    );
+  }
+}
+
+// ── TAB 1: Carrito actual ─────────────────────────────────────────────────────
+
+class _CartTab extends StatelessWidget {
+  const _CartTab({required this.ctrl});
+
+  final OrdersController ctrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final productsCtrl = Get.find<ProductsController>();
+
+    return Obx(() {
+      if (ctrl.items.isEmpty) {
+        return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.shopping_cart_outlined, size: 72, color: Globals.hint),
+              SizedBox(height: 16),
+              Text(
+                'No tienes productos en tu pedido',
+                style: TextStyle(color: Globals.hint, fontSize: 16),
+              ),
+            ],
+          ),
+        );
+      }
+
+      final itemList = ctrl.items.values.toList();
+
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Icon(Icons.shopping_cart_outlined, size: 72, color: Globals.hint),
-                SizedBox(height: 16),
-                Text(
-                  'No tienes productos en tu pedido',
-                  style: TextStyle(color: Globals.hint, fontSize: 16),
+                TextButton.icon(
+                  onPressed: () => _confirmClear(context),
+                  icon: const Icon(Icons.delete_outline,
+                      color: Globals.error, size: 18),
+                  label: const Text(
+                    'Limpiar pedido',
+                    style: TextStyle(color: Globals.error),
+                  ),
                 ),
               ],
             ),
-          );
-        }
-
-        final itemList = controller.items.values.toList();
-
-        return Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: itemList.length,
-                itemBuilder: (context, index) => _OrderItemTile(
-                  item: itemList[index],
-                  assetPath: productsCtrl
-                      .getAssetPathForProduct(itemList[index].product),
-                  onAdd: () =>
-                      controller.addProduct(itemList[index].product),
-                  onRemove: () =>
-                      controller.removeOne(itemList[index].product.id),
-                  onDelete: () =>
-                      controller.removeProduct(itemList[index].product.id),
-                ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: itemList.length,
+              itemBuilder: (context, index) => _OrderItemTile(
+                item: itemList[index],
+                assetPath:
+                    productsCtrl.getAssetPathForProduct(itemList[index].product),
+                onAdd: () => ctrl.addProduct(itemList[index].product),
+                onRemove: () => ctrl.removeOne(itemList[index].product.id),
+                onDelete: () =>
+                    ctrl.removeProduct(itemList[index].product.id),
               ),
             ),
-            _OrderSummary(controller: controller),
-          ],
-        );
-      }),
-    );
+          ),
+          _CartSummary(ctrl: ctrl),
+        ],
+      );
+    });
   }
 
   void _confirmClear(BuildContext context) {
@@ -93,7 +126,7 @@ class OrdersView extends GetView<OrdersController> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Globals.error),
             onPressed: () {
-              controller.clearCart();
+              ctrl.clearCart();
               Get.back<void>();
             },
             child: const Text('Limpiar'),
@@ -103,6 +136,411 @@ class OrdersView extends GetView<OrdersController> {
     );
   }
 }
+
+// ── TAB 2: Historial ──────────────────────────────────────────────────────────
+
+class _HistoryTab extends StatelessWidget {
+  const _HistoryTab({required this.ctrl});
+
+  final OrdersController ctrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (ctrl.isLoadingHistory.value) {
+        return const Center(
+          child: CircularProgressIndicator(color: Globals.primary),
+        );
+      }
+
+      if (ctrl.historyError.value.isNotEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.wifi_off, size: 56, color: Globals.hint),
+              const SizedBox(height: 16),
+              Text(
+                ctrl.historyError.value,
+                style: const TextStyle(color: Globals.hint),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: ctrl.loadOrderHistory,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Globals.primary,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (ctrl.orderHistory.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.receipt_long_outlined,
+                  size: 72, color: Globals.hint),
+              const SizedBox(height: 16),
+              const Text(
+                'Aún no tienes pedidos registrados',
+                style: TextStyle(color: Globals.hint, fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: ctrl.loadOrderHistory,
+                icon: const Icon(Icons.refresh, color: Globals.primary),
+                label: const Text(
+                  'Actualizar',
+                  style: TextStyle(color: Globals.primary),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+        return RefreshIndicator(
+        color: Globals.primary,
+        onRefresh: ctrl.loadOrderHistory,
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: ctrl.orderHistory.length,
+          itemBuilder: (context, index) {
+            final item = ctrl.orderHistory[index];
+            return _OrderHistoryCard(
+              item: item,
+              onTap: () => _showOrderDetail(context, item),
+            );
+          },
+        ),
+      );
+    });
+  }
+
+  void _showOrderDetail(BuildContext context, OrderHistoryItemModel item) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _OrderDetailSheet(item: item),
+    );
+  }
+}
+
+// ── Tarjeta de historial ──────────────────────────────────────────────────────
+
+class _OrderHistoryCard extends StatelessWidget {
+  const _OrderHistoryCard({required this.item, required this.onTap});
+
+  final OrderHistoryItemModel item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = OrderHistoryItemModel.statusColor(item.statusCode);
+    final statusLabel = OrderHistoryItemModel.statusLabel(item.statusCode);
+    final shortId = item.id.length > 8
+        ? '…${item.id.substring(item.id.length - 8)}'
+        : item.id;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.receipt_long, color: statusColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.product.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _StatusBadge(label: statusLabel, color: statusColor),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.product.unitOfMeasure}  ·  ×${item.quantity}',
+                      style: const TextStyle(fontSize: 12, color: Globals.hint),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      OrderHistoryItemModel.formatDate(item.date),
+                      style: const TextStyle(fontSize: 11, color: Globals.hint),
+                    ),
+                    if (item.reason != null && item.reason!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Motivo: ${item.reason}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Globals.error,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Text(
+                shortId,
+                style: const TextStyle(fontSize: 10, color: Globals.hint),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right, color: Globals.hint),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Badge de estado ───────────────────────────────────────────────────────────
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Bottom sheet de detalle ───────────────────────────────────────────────────
+
+class _OrderDetailSheet extends StatelessWidget {
+  const _OrderDetailSheet({required this.item});
+
+  final OrderHistoryItemModel item;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = OrderHistoryItemModel.statusColor(item.statusCode);
+    final statusLabel = OrderHistoryItemModel.statusLabel(item.statusCode);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Globals.hint.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Detalle del ítem',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              _StatusBadge(label: statusLabel, color: statusColor),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'ID: ${item.id}',
+            style: const TextStyle(fontSize: 11, color: Globals.hint),
+          ),
+          const Divider(height: 24),
+
+          // Producto
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Globals.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.inventory_2,
+                  size: 22,
+                  color: Globals.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.product.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      item.product.unitOfMeasure,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Globals.hint,
+                      ),
+                    ),
+                    if (item.product.description != null &&
+                        item.product.description!.isNotEmpty)
+                      Text(
+                        item.product.description!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Globals.hint,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Globals.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '×${item.quantity}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Globals.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const Divider(height: 24),
+
+          // Fecha
+          _DetailRow(
+            icon: Icons.calendar_today_outlined,
+            label: 'Fecha',
+            value: OrderHistoryItemModel.formatDate(item.date),
+          ),
+          const SizedBox(height: 8),
+
+          // Motivo (solo si está cancelado)
+          if (item.reason != null && item.reason!.isNotEmpty) ...[
+            _DetailRow(
+              icon: Icons.info_outline,
+              label: 'Motivo',
+              value: item.reason!,
+              valueColor: Globals.error,
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Globals.hint),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(color: Globals.hint, fontSize: 13),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: valueColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Tile de item del carrito ──────────────────────────────────────────────────
 
 class _OrderItemTile extends StatelessWidget {
   const _OrderItemTile({
@@ -227,10 +665,12 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
-class _OrderSummary extends StatelessWidget {
-  const _OrderSummary({required this.controller});
+// ── Resumen + botón confirmar ─────────────────────────────────────────────────
 
-  final OrdersController controller;
+class _CartSummary extends StatelessWidget {
+  const _CartSummary({required this.ctrl});
+
+  final OrdersController ctrl;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +699,7 @@ class _OrderSummary extends StatelessWidget {
               ),
               Obx(
                 () => Text(
-                  '${controller.items.length}',
+                  '${ctrl.items.length}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -275,7 +715,7 @@ class _OrderSummary extends StatelessWidget {
               ),
               Obx(
                 () => Text(
-                  '${controller.totalItems}',
+                  '${ctrl.totalItems}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -289,7 +729,7 @@ class _OrderSummary extends StatelessWidget {
           Obx(
             () => FilledButton.icon(
               onPressed:
-                  controller.isSubmitting.value ? null : controller.confirmOrder,
+                  ctrl.isSubmitting.value ? null : ctrl.confirmOrder,
               style: FilledButton.styleFrom(
                 backgroundColor: Globals.primary,
                 minimumSize: const Size.fromHeight(50),
@@ -297,7 +737,7 @@ class _OrderSummary extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              icon: controller.isSubmitting.value
+              icon: ctrl.isSubmitting.value
                   ? const SizedBox(
                       width: 18,
                       height: 18,
@@ -308,7 +748,7 @@ class _OrderSummary extends StatelessWidget {
                     )
                   : const Icon(Icons.check_circle_outline),
               label: Text(
-                controller.isSubmitting.value
+                ctrl.isSubmitting.value
                     ? 'Enviando...'
                     : 'Confirmar pedido',
                 style: const TextStyle(fontSize: 16),

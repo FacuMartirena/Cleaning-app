@@ -19,5 +19,6 @@ class ProductsProvider extends GetConnect {
   }
 
   Future<Response> getProducts({int limit = 10, int offset = 0}) =>
-      get(Globals.productsPath, query: {'limit': limit.toString(), 'offset': offset.toString()});
+      get(Globals.productsPath,
+          query: {'limit': limit.toString(), 'offset': offset.toString()});
 }

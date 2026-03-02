@@ -3,16 +3,46 @@ import 'package:get/get.dart';
 
 import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/order_item_model.dart';
+import 'package:bo_cleaning/core/models/order_model.dart' show OrderHistoryItemModel;
 import 'package:bo_cleaning/core/models/product_model.dart';
 import 'package:bo_cleaning/core/services/auth_service.dart';
 import 'package:bo_cleaning/modules/orders/services/orders_provider.dart';
 
-class OrdersController extends GetxController {
+class OrdersController extends GetxController
+    with GetSingleTickerProviderStateMixin {
   final OrdersProvider _provider = Get.find<OrdersProvider>();
   final AuthService _auth = Get.find<AuthService>();
 
+  // ── Tab navigation ───────────────────────────────────────────────────────────
+  late final TabController tabController;
+
+  // ── Cart ────────────────────────────────────────────────────────────────────
   final items = <String, OrderItemModel>{}.obs;
   final isSubmitting = false.obs;
+
+  // ── Order history ────────────────────────────────────────────────────────────
+  final orderHistory = <OrderHistoryItemModel>[].obs;
+  final isLoadingHistory = false.obs;
+  final historyError = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    tabController = TabController(length: 2, vsync: this);
+    tabController.addListener(() {
+      if (!tabController.indexIsChanging && tabController.index == 1) {
+        if (orderHistory.isEmpty && !isLoadingHistory.value) {
+          loadOrderHistory();
+        }
+      }
+    });
+  }
+
+  @override
+  void onClose() {
+    tabController.dispose();
+    super.onClose();
+  }
 
   int get totalItems =>
       items.values.fold(0, (sum, item) => sum + item.quantity);
@@ -71,7 +101,8 @@ class OrdersController extends GetxController {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         clearCart();
-        Get.back();
+        // Refresh history so the new order appears immediately
+        orderHistory.clear();
         Get.snackbar(
           'Pedido enviado',
           'Tu pedido fue creado exitosamente',
@@ -103,6 +134,45 @@ class OrdersController extends GetxController {
       );
     } finally {
       isSubmitting.value = false;
+    }
+  }
+
+  // ── History ──────────────────────────────────────────────────────────────────
+
+  Future<void> loadOrderHistory() async {
+    final userId = _auth.userId;
+    if (userId == null || userId.isEmpty) return;
+
+    isLoadingHistory.value = true;
+    historyError.value = '';
+
+    try {
+      final response = await _provider.getOrders(userId: userId);
+
+      if (response.statusCode == 200) {
+        final body = response.body;
+        List<dynamic> data;
+        if (body is List) {
+          data = body;
+        } else if (body is Map && body['data'] is List) {
+          data = body['data'] as List;
+        } else {
+          data = [];
+        }
+        orderHistory.value = data
+            .map(
+              (e) => OrderHistoryItemModel.fromJson(
+                e as Map<String, dynamic>,
+              ),
+            )
+            .toList();
+      } else {
+        historyError.value = 'Error al cargar el historial de pedidos';
+      }
+    } catch (_) {
+      historyError.value = 'No se pudo conectar con el servidor';
+    } finally {
+      isLoadingHistory.value = false;
     }
   }
 }

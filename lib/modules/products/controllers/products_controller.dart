@@ -28,7 +28,6 @@ class ProductsController extends GetxController {
   Future<void> loadProducts({int limit = 10, int offset = 0}) async {
     isLoading.value = true;
     errorMessage.value = null;
-
     try {
       final response = await _provider.getProducts(
         limit: limit,
@@ -37,15 +36,13 @@ class ProductsController extends GetxController {
 
       if (response.statusCode == 200) {
         final list = response.body as List<dynamic>?;
-        products.value =
-            list
+        products.value = list
                 ?.map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [];
       } else {
         errorMessage.value =
-            response.body?['message']?.toString() ??
-            'Error al cargar productos';
+            response.body?['message']?.toString() ?? 'Error al cargar productos';
       }
     } catch (_) {
       errorMessage.value = 'No se pudo conectar con el servidor';

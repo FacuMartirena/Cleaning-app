@@ -9,6 +9,8 @@ import 'package:bo_cleaning/modules/products/bindings/products_binding.dart';
 import 'package:bo_cleaning/modules/products/views/products_view.dart';
 import 'package:bo_cleaning/modules/splash/bindings/splash_binding.dart';
 import 'package:bo_cleaning/modules/splash/views/splash_view.dart';
+import 'package:bo_cleaning/modules/users/bindings/users_binding.dart';
+import 'package:bo_cleaning/modules/users/views/users_view.dart';
 
 abstract class AppPages {
   static final List<GetPage<void>> pages = [
@@ -31,6 +33,11 @@ abstract class AppPages {
       name: AppRoutes.orders,
       page: () => const OrdersView(),
       binding: OrdersBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.users,
+      page: () => const UsersView(),
+      binding: UsersBinding(),
     ),
   ];
 }

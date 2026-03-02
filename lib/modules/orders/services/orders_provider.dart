@@ -20,4 +20,12 @@ class OrdersProvider extends GetConnect {
 
   Future<Response> createOrder(Map<String, dynamic> body) =>
       post(Globals.ordersPath, body);
+
+  Future<Response> getOrders({String? userId}) {
+    final query = userId != null && userId.isNotEmpty ? '?userId=$userId' : '';
+    return get('${Globals.ordersPath}$query');
+  }
+
+  Future<Response> getOrderById(String orderId) =>
+      get('${Globals.ordersPath}/$orderId');
 }
