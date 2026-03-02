@@ -1,12 +1,10 @@
 import 'package:bo_cleaning/modules/login/services/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 
 import 'package:bo_cleaning/config/router/app_routes.dart';
-import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/user_model.dart';
-import 'package:bo_cleaning/modules/login/services/auth_service.dart';
+import 'package:bo_cleaning/core/services/auth_service.dart';
 
 class LoginController extends GetxController {
   final AuthService _authService;
