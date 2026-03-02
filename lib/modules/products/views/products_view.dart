@@ -7,9 +7,32 @@ import 'package:bo_cleaning/core/widgets/app_drawer.dart';
 import 'package:bo_cleaning/core/models/product_model.dart';
 import 'package:bo_cleaning/modules/orders/controllers/orders_controller.dart';
 import 'package:bo_cleaning/modules/products/controllers/products_controller.dart';
+import 'package:bo_cleaning/modules/products/widgets/add_product_sheet.dart';
 
 class ProductsView extends GetView<ProductsController> {
   const ProductsView({super.key});
+
+  void _showAddProductSheet() {
+    controller.openCreateProductSheet();
+    Get.bottomSheet<void>(
+      DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Globals.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: AddProductSheet(scrollController: scrollController),
+        ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Globals.transparent,
+      ignoreSafeArea: false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +43,14 @@ class ProductsView extends GetView<ProductsController> {
         title: const Text('Productos'),
         backgroundColor: Globals.primary,
         foregroundColor: Globals.white,
+        actions: [
+          if (controller.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Agregar producto',
+              onPressed: _showAddProductSheet,
+            ),
+        ],
       ),
       drawer: const AppDrawer(),
       floatingActionButton: Obx(() {

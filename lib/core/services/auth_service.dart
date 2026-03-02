@@ -20,6 +20,13 @@ class AuthService extends GetxService {
     return data['id']?.toString();
   }
 
+  String? get userRole {
+    final data = _box.read<Map<dynamic, dynamic>>(Globals.storageUser);
+    return data?['role']?.toString();
+  }
+
+  bool get isAdmin => userRole == 'Administrador';
+
   void saveToken(String token) => _box.write(Globals.storageToken, token);
   void saveUser(UserModel user) =>
       _box.write(Globals.storageUser, user.toJson());
