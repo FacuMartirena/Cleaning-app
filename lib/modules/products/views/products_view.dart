@@ -57,47 +57,106 @@ class ProductsView extends GetView<ProductsController> {
           label: const Text('Ver pedido'),
         );
       }),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (controller.errorMessage.value != null) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    controller.errorMessage.value!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Globals.primary),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: TextField(
+              controller: controller.searchController,
+              onChanged: controller.onSearchChanged,
+              decoration: InputDecoration(
+                hintText: 'Buscar por nombre o presentación',
+                hintStyle: const TextStyle(color: Globals.hint, fontSize: 14),
+                prefixIcon: const Icon(Icons.search, color: Globals.hint),
+                suffixIcon: Obx(
+                  () => controller.searchQuery.value.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Globals.hint),
+                          onPressed: () {
+                            controller.searchController.clear();
+                            controller.onSearchChanged('');
+                          },
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                filled: true,
+                fillColor: Globals.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Globals.hint),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Globals.hint),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Globals.primary,
+                    width: 1.5,
                   ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () => controller.loadProducts(),
-                    child: const Text('Reintentar'),
-                  ),
-                ],
+                ),
               ),
             ),
-          );
-        }
-        if (controller.products.isEmpty) {
-          return const Center(child: Text('No hay productos'));
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: controller.products.length,
-          itemBuilder: (context, index) => _ProductTile(
-            product: controller.products[index],
-            assetPath: controller.getAssetPathForProduct(
-              controller.products[index],
-            ),
-            ordersCtrl: ordersCtrl,
           ),
-        );
-      }),
+          Expanded(
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (controller.errorMessage.value != null) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          controller.errorMessage.value!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Globals.primary),
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: () => controller.loadProducts(),
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              final hasSearch = controller.searchQuery.value.isNotEmpty;
+
+              if (controller.products.isEmpty) {
+                return Center(
+                  child: Text(
+                    hasSearch
+                        ? 'Sin resultados para "${controller.searchQuery.value}"'
+                        : 'No hay productos',
+                    style: const TextStyle(color: Globals.hint, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: controller.products.length,
+                itemBuilder: (context, index) => _ProductTile(
+                  product: controller.products[index],
+                  assetPath: controller.getAssetPathForProduct(
+                    controller.products[index],
+                  ),
+                  ordersCtrl: ordersCtrl,
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -130,8 +189,8 @@ class _ProductTile extends StatelessWidget {
               backgroundImage: hasNetworkImage
                   ? NetworkImage(product.images.first.url)
                   : hasAsset
-                      ? AssetImage(assetPath!)
-                      : null,
+                  ? AssetImage(assetPath!)
+                  : null,
               child: (hasNetworkImage || hasAsset)
                   ? null
                   : const Icon(Icons.inventory_2, color: Globals.primary),
@@ -158,11 +217,13 @@ class _ProductTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Obx(() => _QuantitySelector(
-                  quantity: ordersCtrl.quantityOf(product.id),
-                  onAdd: () => ordersCtrl.addProduct(product),
-                  onRemove: () => ordersCtrl.removeOne(product.id),
-                )),
+            Obx(
+              () => _QuantitySelector(
+                quantity: ordersCtrl.quantityOf(product.id),
+                onAdd: () => ordersCtrl.addProduct(product),
+                onRemove: () => ordersCtrl.removeOne(product.id),
+              ),
+            ),
           ],
         ),
       ),
