@@ -16,10 +16,14 @@ class SplashController extends GetxController {
   }
 
   void _goToLoginOrProducts() {
-    if (_auth.isLoggedIn) {
-      Get.offAllNamed(AppRoutes.products);
-    } else {
+    if (!_auth.isLoggedIn) {
       Get.offAllNamed(AppRoutes.login);
+      return;
+    }
+    if (_auth.isAdmin && _auth.companyId == null) {
+      Get.offAllNamed(AppRoutes.companySelect);
+    } else {
+      Get.offAllNamed(AppRoutes.products);
     }
   }
 }

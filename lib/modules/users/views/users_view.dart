@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'package:bo_cleaning/core/constants/globals.dart';
-import 'package:bo_cleaning/core/widgets/app_drawer.dart';
 import 'package:bo_cleaning/core/models/user_model.dart';
+import 'package:bo_cleaning/core/widgets/app_drawer.dart';
 import 'package:bo_cleaning/modules/users/controller/users_controller.dart'
     show UsersController, allowedRoles;
 
@@ -21,7 +21,7 @@ class UsersView extends GetView<UsersController> {
       ),
       drawer: const AppDrawer(),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateUserBottomSheet(context),
+        onPressed: _showCreateUserBottomSheet,
         backgroundColor: Globals.primary,
         foregroundColor: Globals.white,
         icon: const Icon(Icons.person_add),
@@ -134,16 +134,16 @@ class UsersView extends GetView<UsersController> {
     );
   }
 
-  void _showCreateUserBottomSheet(BuildContext context) {
+  void _showCreateUserBottomSheet() {
     controller.openCreateUserDialog();
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Globals.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
+    // ── Adaptive: smaller initial size on wider screens ───────────────────────
+    final isWide = Get.width >= 600;
+    Get.bottomSheet<void>(
+      DraggableScrollableSheet(
+        initialChildSize: isWide ? 0.7 : 0.85,
         minChildSize: 0.5,
         maxChildSize: 0.95,
+        expand: false,
         builder: (_, scrollController) => Container(
           decoration: const BoxDecoration(
             color: Globals.white,
@@ -222,8 +222,7 @@ class UsersView extends GetView<UsersController> {
                     textInputAction: TextInputAction.next,
                     validationMessages: {
                       ValidationMessage.required: (_) => 'Campo requerido',
-                      ValidationMessage.minLength: (_) =>
-                          'Mínimo 6 caracteres',
+                      ValidationMessage.minLength: (_) => 'Mínimo 6 caracteres',
                     },
                   ),
                 ),
@@ -253,10 +252,84 @@ class UsersView extends GetView<UsersController> {
                       ),
                     ),
                     items: allowedRoles
-                        .map(
-                          (r) => DropdownMenuItem(value: r, child: Text(r)),
-                        )
+                        .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                         .toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // ── Company (optional) — + empresa above dropdown ────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Empresa',
+                      style: TextStyle(
+                        color: Globals.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: controller.showCreateCompanyDialog,
+                      icon: const Icon(
+                        Icons.add,
+                        size: 18,
+                        color: Globals.primary,
+                      ),
+                      label: const Text(
+                        'Agregar empresa',
+                        style: TextStyle(
+                          color: Globals.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Obx(
+                  () => AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: controller.isLoadingCompanies.value
+                        ? Container(
+                            key: const ValueKey('loading'),
+                            height: 52,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Globals.hint),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Globals.primary,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          )
+                        : ReactiveDropdownField<String?>(
+                            key: const ValueKey('dropdown'),
+                            formControlName: 'companyId',
+                            decoration: _inputDecoration(
+                              null,
+                            ).copyWith(hintText: 'Sin empresa'),
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text(
+                                  'Sin empresa',
+                                  style: TextStyle(color: Globals.hint),
+                                ),
+                              ),
+                              ...controller.companies.map(
+                                (c) => DropdownMenuItem<String?>(
+                                  value: c.id,
+                                  child: Text(c.name),
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -268,8 +341,9 @@ class UsersView extends GetView<UsersController> {
                 const SizedBox(height: 24),
                 Obx(
                   () => FilledButton(
-                    onPressed:
-                        controller.isLoading.value ? null : controller.createUser,
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : controller.createUser,
                     style: FilledButton.styleFrom(
                       backgroundColor: Globals.primary,
                       minimumSize: const Size.fromHeight(50),
@@ -294,50 +368,53 @@ class UsersView extends GetView<UsersController> {
           ),
         ),
       ),
+      isScrollControlled: true,
+      backgroundColor: Globals.transparent,
     );
   }
 
-  InputDecoration _inputDecoration(String hint) => InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: Globals.hint, fontSize: 14),
-        filled: true,
-        fillColor: Globals.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Globals.hint),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Globals.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Globals.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Globals.error, width: 1.5),
-        ),
-      );
+  InputDecoration _inputDecoration(String? hint) => InputDecoration(
+    hintText: hint,
+    hintStyle: const TextStyle(color: Globals.hint, fontSize: 14),
+    filled: true,
+    fillColor: Globals.white,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide(color: Globals.hint),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: Globals.primary, width: 1.5),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: Globals.error),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: Globals.error, width: 1.5),
+    ),
+  );
 
   Widget _labeledField(String label, Widget child) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Globals.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          child,
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(
+          color: Globals.primary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 8),
+      child,
+    ],
+  );
 }
+
+// ── User tile ─────────────────────────────────────────────────────────────────
 
 class _UserTile extends StatelessWidget {
   const _UserTile({required this.user, required this.onToggle});
@@ -371,7 +448,14 @@ class _UserTile extends StatelessWidget {
                     style: const TextStyle(fontSize: 12, color: Globals.hint),
                   ),
                   const SizedBox(height: 4),
-                  _RoleChip(role: user.role),
+                  Wrap(
+                    spacing: 6,
+                    children: [
+                      _RoleChip(role: user.role),
+                      if (user.company != null)
+                        _CompanyChip(name: user.company!.name),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -388,20 +472,31 @@ class _UserTile extends StatelessWidget {
   }
 }
 
+// ── Role chip with 3-role color coding ───────────────────────────────────────
+
 class _RoleChip extends StatelessWidget {
   const _RoleChip({required this.role});
 
   final String role;
 
+  Color get _color {
+    switch (role) {
+      case 'Administrador':
+        return Globals.primary;
+      case 'Administrativo':
+        return Globals.pending;
+      default:
+        return Globals.hint;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isAdmin = role == 'Administrador';
+    final color = _color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: (isAdmin ? Globals.primary : Globals.hint).withValues(
-          alpha: 0.15,
-        ),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -409,9 +504,29 @@ class _RoleChip extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: isAdmin ? Globals.primary : Globals.hint,
+          color: color,
         ),
       ),
+    );
+  }
+}
+
+// ── Company chip ──────────────────────────────────────────────────────────────
+
+class _CompanyChip extends StatelessWidget {
+  const _CompanyChip({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.business_outlined, size: 11, color: Globals.hint),
+        const SizedBox(width: 3),
+        Text(name, style: const TextStyle(fontSize: 11, color: Globals.hint)),
+      ],
     );
   }
 }

@@ -3,27 +3,46 @@ import 'package:get/get.dart';
 
 import 'package:bo_cleaning/config/router/app_routes.dart';
 import 'package:bo_cleaning/core/constants/globals.dart';
+import 'package:bo_cleaning/core/services/auth_service.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final companyName =
+        Get.find<AuthService>().companyName;
     return Drawer(
       child: ListView(
         children: [
           Container(
-            height: 100,
+            height: 120,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
             decoration: const BoxDecoration(color: Globals.primary),
             alignment: Alignment.bottomLeft,
-            child: const Text(
-              'Menú',
-              style: TextStyle(
-                color: Globals.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Menú',
+                  style: TextStyle(
+                    color: Globals.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (companyName != null && companyName.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    companyName,
+                    style: TextStyle(
+                      color: Globals.white.withValues(alpha: 0.9),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           ListTile(

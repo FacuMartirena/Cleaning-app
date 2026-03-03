@@ -28,4 +28,12 @@ class OrdersProvider extends GetConnect {
 
   Future<Response> getOrderById(String orderId) =>
       get('${Globals.ordersPath}/$orderId');
+
+  Future<Response> finalizeOrder(String id) =>
+      patch('${Globals.ordersPath}/$id/finalize', {});
+
+  Future<Response> rejectOrder(String id, {String? reason}) => patch(
+        '${Globals.ordersPath}/$id/reject',
+        reason != null && reason.isNotEmpty ? {'reason': reason} : {},
+      );
 }

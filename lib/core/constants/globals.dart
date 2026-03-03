@@ -19,6 +19,9 @@ abstract class Globals {
   // --- Orders ---
   static const String ordersPath = '/orders';
 
+  // --- Companies ---
+  static const String companiesPath = '/company';
+
   // --- Storage keys ---
   static const String storageToken = 'token';
   static const String storageUser = 'user';
