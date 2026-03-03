@@ -173,15 +173,52 @@ class ProductsView extends GetView<ProductsController> {
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: controller.products.length,
-                itemBuilder: (context, index) => _ProductTile(
-                  product: controller.products[index],
-                  assetPath: controller.getAssetPathForProduct(
-                    controller.products[index],
-                  ),
-                  ordersCtrl: ordersCtrl,
+              return NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollEndNotification &&
+                      notification.metrics.pixels >=
+                          notification.metrics.maxScrollExtent - 200) {
+                    controller.loadMore();
+                  }
+                  return false;
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: controller.products.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == controller.products.length) {
+                      return Obx(() {
+                        if (controller.isLoadingMore.value) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        if (!controller.hasMore.value) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(
+                              child: Text(
+                                'No hay más productos',
+                                style: TextStyle(
+                                  color: Globals.hint,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      });
+                    }
+                    return _ProductTile(
+                      product: controller.products[index],
+                      assetPath: controller.getAssetPathForProduct(
+                        controller.products[index],
+                      ),
+                      ordersCtrl: ordersCtrl,
+                    );
+                  },
                 ),
               );
             }),

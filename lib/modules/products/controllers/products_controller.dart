@@ -13,8 +13,13 @@ class ProductsController extends GetxController {
 
   // ── List state ───────────────────────────────────────────────────────────────
 
+  static const int _pageSize = 10;
+  int _offset = 0;
+
   final products = <ProductModel>[].obs;
   final isLoading = false.obs;
+  final isLoadingMore = false.obs;
+  final hasMore = true.obs;
   final errorMessage = Rx<String?>(null);
   final _allProducts = <ProductModel>[];
   final searchQuery = ''.obs;
@@ -98,15 +103,16 @@ class ProductsController extends GetxController {
 
   // ── Load products ────────────────────────────────────────────────────────────
 
-  Future<void> loadProducts({int limit = 10, int offset = 0}) async {
+  Future<void> loadProducts() async {
+    _offset = 0;
+    hasMore.value = true;
     isLoading.value = true;
     errorMessage.value = null;
     try {
       final response = await _provider.getProducts(
-        limit: limit,
-        offset: offset,
+        limit: _pageSize,
+        offset: 0,
       );
-
       if (response.statusCode == 200) {
         final list = response.body as List<dynamic>?;
         final loaded =
@@ -118,6 +124,8 @@ class ProductsController extends GetxController {
           ..clear()
           ..addAll(loaded);
         _applyFilter();
+        if (loaded.length < _pageSize) hasMore.value = false;
+        _offset = loaded.length;
       } else {
         errorMessage.value =
             response.body?['message']?.toString() ??
@@ -127,6 +135,33 @@ class ProductsController extends GetxController {
       errorMessage.value = 'No se pudo conectar con el servidor';
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (isLoadingMore.value || !hasMore.value || isLoading.value) return;
+    isLoadingMore.value = true;
+    try {
+      final response = await _provider.getProducts(
+        limit: _pageSize,
+        offset: _offset,
+      );
+      if (response.statusCode == 200) {
+        final list = response.body as List<dynamic>?;
+        final loaded =
+            list
+                ?.map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [];
+        _allProducts.addAll(loaded);
+        _applyFilter();
+        if (loaded.length < _pageSize) hasMore.value = false;
+        _offset += loaded.length;
+      }
+    } catch (_) {
+      // silent — la lista existente se mantiene
+    } finally {
+      isLoadingMore.value = false;
     }
   }
 
