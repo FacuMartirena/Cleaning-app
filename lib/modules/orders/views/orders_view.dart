@@ -3,7 +3,8 @@ import 'package:get/get.dart';
 
 import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/order_item_model.dart';
-import 'package:bo_cleaning/core/models/order_model.dart' show OrderHistoryItemModel;
+import 'package:bo_cleaning/core/models/order_model.dart'
+    show OrderHistoryItemModel;
 import 'package:bo_cleaning/core/widgets/app_drawer.dart';
 import 'package:bo_cleaning/modules/orders/controllers/orders_controller.dart';
 import 'package:bo_cleaning/modules/products/controllers/products_controller.dart';
@@ -79,9 +80,12 @@ class _CartTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
-                  onPressed: () => _confirmClear(context),
-                  icon: const Icon(Icons.delete_outline,
-                      color: Globals.error, size: 18),
+                  onPressed: _confirmClear,
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Globals.error,
+                    size: 18,
+                  ),
                   label: const Text(
                     'Limpiar pedido',
                     style: TextStyle(color: Globals.error),
@@ -96,12 +100,12 @@ class _CartTab extends StatelessWidget {
               itemCount: itemList.length,
               itemBuilder: (context, index) => _OrderItemTile(
                 item: itemList[index],
-                assetPath:
-                    productsCtrl.getAssetPathForProduct(itemList[index].product),
+                assetPath: productsCtrl.getAssetPathForProduct(
+                  itemList[index].product,
+                ),
                 onAdd: () => ctrl.addProduct(itemList[index].product),
                 onRemove: () => ctrl.removeOne(itemList[index].product.id),
-                onDelete: () =>
-                    ctrl.removeProduct(itemList[index].product.id),
+                onDelete: () => ctrl.removeProduct(itemList[index].product.id),
               ),
             ),
           ),
@@ -111,13 +115,13 @@ class _CartTab extends StatelessWidget {
     });
   }
 
-  void _confirmClear(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
+  void _confirmClear() {
+    Get.dialog<void>(
+      AlertDialog(
         title: const Text('Limpiar pedido'),
-        content:
-            const Text('¿Seguro que quieres eliminar todos los productos?'),
+        content: const Text(
+          '¿Seguro que quieres eliminar todos los productos?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back<void>(),
@@ -170,9 +174,7 @@ class _HistoryTab extends StatelessWidget {
                 onPressed: ctrl.loadOrderHistory,
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reintentar'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Globals.primary,
-                ),
+                style: FilledButton.styleFrom(backgroundColor: Globals.primary),
               ),
             ],
           ),
@@ -184,8 +186,11 @@ class _HistoryTab extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.receipt_long_outlined,
-                  size: 72, color: Globals.hint),
+              const Icon(
+                Icons.receipt_long_outlined,
+                size: 72,
+                color: Globals.hint,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'Aún no tienes pedidos registrados',
@@ -205,7 +210,7 @@ class _HistoryTab extends StatelessWidget {
         );
       }
 
-        return RefreshIndicator(
+      return RefreshIndicator(
         color: Globals.primary,
         onRefresh: ctrl.loadOrderHistory,
         child: ListView.builder(
@@ -215,7 +220,7 @@ class _HistoryTab extends StatelessWidget {
             final item = ctrl.orderHistory[index];
             return _OrderHistoryCard(
               item: item,
-              onTap: () => _showOrderDetail(context, item),
+              onTap: () => _showOrderDetail(item),
             );
           },
         ),
@@ -223,14 +228,20 @@ class _HistoryTab extends StatelessWidget {
     });
   }
 
-  void _showOrderDetail(BuildContext context, OrderHistoryItemModel item) {
-    showModalBottomSheet<void>(
-      context: context,
+  void _showOrderDetail(OrderHistoryItemModel item) {
+    Get.bottomSheet<void>(
+      Container(
+        decoration: const BoxDecoration(
+          color: Globals.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: _OrderDetailSheet(item: item),
+      ),
       isScrollControlled: true,
+      backgroundColor: Globals.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _OrderDetailSheet(item: item),
     );
   }
 }
@@ -247,9 +258,6 @@ class _OrderHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = OrderHistoryItemModel.statusColor(item.statusCode);
     final statusLabel = OrderHistoryItemModel.statusLabel(item.statusCode);
-    final shortId = item.id.length > 8
-        ? '…${item.id.substring(item.id.length - 8)}'
-        : item.id;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -317,11 +325,6 @@ class _OrderHistoryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Text(
-                shortId,
-                style: const TextStyle(fontSize: 10, color: Globals.hint),
-              ),
-              const SizedBox(width: 4),
               const Icon(Icons.chevron_right, color: Globals.hint),
             ],
           ),
@@ -402,11 +405,6 @@ class _OrderDetailSheet extends StatelessWidget {
               _StatusBadge(label: statusLabel, color: statusColor),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            'ID: ${item.id}',
-            style: const TextStyle(fontSize: 11, color: Globals.hint),
-          ),
           const Divider(height: 24),
 
           // Producto
@@ -439,10 +437,7 @@ class _OrderDetailSheet extends StatelessWidget {
                     ),
                     Text(
                       item.product.unitOfMeasure,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Globals.hint,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: Globals.hint),
                     ),
                     if (item.product.description != null &&
                         item.product.description!.isNotEmpty)
@@ -459,7 +454,10 @@ class _OrderDetailSheet extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Globals.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
@@ -496,6 +494,137 @@ class _OrderDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
+
+          // Acciones de admin (solo pedidos pendientes)
+          if (item.statusCode == 0 && Get.find<OrdersController>().isAdmin) ...[
+            const Divider(height: 24),
+            _AdminActions(item: item),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Acciones de admin (finalizar / rechazar) ──────────────────────────────────
+
+class _AdminActions extends StatelessWidget {
+  const _AdminActions({required this.item});
+
+  final OrderHistoryItemModel item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = Get.find<OrdersController>();
+
+    return Obx(
+      () => Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: ctrl.isActionLoading.value
+                  ? null
+                  : () => _confirmReject(ctrl),
+              icon: const Icon(Icons.cancel_outlined, color: Globals.error),
+              label: const Text(
+                'Rechazar',
+                style: TextStyle(color: Globals.error),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Globals.error),
+                minimumSize: const Size.fromHeight(46),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: ctrl.isActionLoading.value
+                  ? null
+                  : () => _confirmFinalize(ctrl),
+              icon: ctrl.isActionLoading.value
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        color: Globals.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.check_circle_outline),
+              label: Text(
+                ctrl.isActionLoading.value ? 'Procesando...' : 'Finalizar',
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: Globals.success,
+                minimumSize: const Size.fromHeight(46),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmFinalize(OrdersController ctrl) {
+    Get.dialog<void>(
+      AlertDialog(
+        title: const Text('Finalizar pedido'),
+        content: const Text(
+          '¿Confirmas que deseas finalizar este pedido? Se descontará el stock del producto.',
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Globals.success),
+            onPressed: () {
+              Get.back<void>();
+              ctrl.finalizeOrder(item.id);
+            },
+            child: const Text('Finalizar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmReject(OrdersController ctrl) {
+    final reasonCtrl = TextEditingController();
+    Get.dialog<void>(
+      AlertDialog(
+        title: const Text('Rechazar pedido'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('¿Deseas rechazar este pedido?'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Motivo (opcional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Globals.error),
+            onPressed: () {
+              final reason = reasonCtrl.text.trim();
+              Get.back<void>();
+              ctrl.rejectOrder(item.id, reason: reason.isEmpty ? null : reason);
+            },
+            child: const Text('Rechazar'),
+          ),
         ],
       ),
     );
@@ -575,8 +704,8 @@ class _OrderItemTile extends StatelessWidget {
               backgroundImage: hasNetworkImage
                   ? NetworkImage(item.product.images.first.url)
                   : hasAsset
-                      ? AssetImage(assetPath!)
-                      : null,
+                  ? AssetImage(assetPath!)
+                  : null,
               child: (hasNetworkImage || hasAsset)
                   ? null
                   : const Icon(Icons.inventory_2, color: Globals.primary),
@@ -728,8 +857,7 @@ class _CartSummary extends StatelessWidget {
           const SizedBox(height: 16),
           Obx(
             () => FilledButton.icon(
-              onPressed:
-                  ctrl.isSubmitting.value ? null : ctrl.confirmOrder,
+              onPressed: ctrl.isSubmitting.value ? null : ctrl.confirmOrder,
               style: FilledButton.styleFrom(
                 backgroundColor: Globals.primary,
                 minimumSize: const Size.fromHeight(50),
@@ -748,9 +876,7 @@ class _CartSummary extends StatelessWidget {
                     )
                   : const Icon(Icons.check_circle_outline),
               label: Text(
-                ctrl.isSubmitting.value
-                    ? 'Enviando...'
-                    : 'Confirmar pedido',
+                ctrl.isSubmitting.value ? 'Enviando...' : 'Confirmar pedido',
                 style: const TextStyle(fontSize: 16),
               ),
             ),

@@ -37,11 +37,18 @@ class ProductsController extends GetxController {
 
   bool get isAdmin => Get.find<AuthService>().isAdmin;
 
+  Worker? _searchWorker;
+
   // ── Lifecycle ────────────────────────────────────────────────────────────────
 
   @override
   void onInit() {
     super.onInit();
+    _searchWorker = debounce(
+      searchQuery,
+      (_) => _applyFilter(),
+      time: const Duration(milliseconds: 800),
+    );
     createProductForm = FormGroup({
       'name': FormControl<String>(validators: [Validators.required]),
       'unitOfMeasure': FormControl<String>(validators: [Validators.required]),
@@ -64,6 +71,7 @@ class ProductsController extends GetxController {
 
   @override
   void onClose() {
+    _searchWorker?.dispose();
     searchController.dispose();
     createProductForm.dispose();
     super.onClose();
@@ -73,7 +81,6 @@ class ProductsController extends GetxController {
 
   void onSearchChanged(String query) {
     searchQuery.value = query.trim().toLowerCase();
-    _applyFilter();
   }
 
   void _applyFilter() {

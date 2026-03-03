@@ -9,7 +9,7 @@ class OrderHistoryItemModel {
   final String id;
   final int quantity;
   final DateTime date;
-  final int statusCode; // 0=Pendiente 1=En proceso 2=Entregado 3=Cancelado
+  final int statusCode; // 0=Pendiente 1=Finalizado 2=Rechazado
   final String? reason;
   final ProductModel product;
 
@@ -51,11 +51,9 @@ class OrderHistoryItemModel {
       case 0:
         return 'Pendiente';
       case 1:
-        return 'En proceso';
+        return 'Finalizado';
       case 2:
-        return 'Entregado';
-      case 3:
-        return 'Cancelado';
+        return 'Rechazado';
       default:
         return 'Desconocido';
     }
@@ -66,10 +64,8 @@ class OrderHistoryItemModel {
       case 0:
         return Globals.pending;
       case 1:
-        return Globals.primary;
-      case 2:
         return Globals.success;
-      case 3:
+      case 2:
         return Globals.error;
       default:
         return Globals.hint;

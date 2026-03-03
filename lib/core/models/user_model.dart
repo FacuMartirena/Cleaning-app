@@ -1,3 +1,5 @@
+import 'package:bo_cleaning/core/models/company_model.dart';
+
 class UserModel {
   final String id;
   final String email;
@@ -6,6 +8,8 @@ class UserModel {
   final String ci;
   final String role;
   final bool active;
+  final String? companyId;
+  final CompanyModel? company;
 
   const UserModel({
     required this.id,
@@ -15,17 +19,24 @@ class UserModel {
     required this.ci,
     required this.role,
     this.active = true,
+    this.companyId,
+    this.company,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id: json['id']?.toString() ?? '',
-        email: json['email']?.toString() ?? '',
-        firstName: json['firstName']?.toString() ?? '',
-        lastName: json['lastName']?.toString() ?? '',
-        ci: json['ci']?.toString() ?? '',
-        role: json['role']?.toString() ?? 'Usuario',
-        active: json['active'] as bool? ?? true,
-      );
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    final companyJson = json['company'] as Map<String, dynamic>?;
+    return UserModel(
+      id: json['id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      firstName: json['firstName']?.toString() ?? '',
+      lastName: json['lastName']?.toString() ?? '',
+      ci: json['ci']?.toString() ?? '',
+      role: json['role']?.toString() ?? 'Limpiador',
+      active: json['active'] as bool? ?? true,
+      companyId: json['companyId']?.toString(),
+      company: companyJson != null ? CompanyModel.fromJson(companyJson) : null,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -35,6 +46,8 @@ class UserModel {
         'ci': ci,
         'role': role,
         'active': active,
+        if (companyId != null) 'companyId': companyId,
+        if (company != null) 'company': company!.toJson(),
       };
 
   /// Body para crear usuario (POST /api/users).
@@ -46,6 +59,7 @@ class UserModel {
     required String ci,
     required String role,
     bool active = true,
+    String? companyId,
   }) =>
       {
         'firstName': firstName,
@@ -55,5 +69,6 @@ class UserModel {
         'ci': ci,
         'role': role,
         'active': active,
+        if (companyId != null && companyId.isNotEmpty) 'companyId': companyId,
       };
 }

@@ -24,6 +24,9 @@ class OrdersController extends GetxController
   final orderHistory = <OrderHistoryItemModel>[].obs;
   final isLoadingHistory = false.obs;
   final historyError = ''.obs;
+  final isActionLoading = false.obs;
+
+  bool get isAdmin => _auth.isAdmin;
 
   @override
   void onInit() {
@@ -140,14 +143,18 @@ class OrdersController extends GetxController
   // ── History ──────────────────────────────────────────────────────────────────
 
   Future<void> loadOrderHistory() async {
-    final userId = _auth.userId;
-    if (userId == null || userId.isEmpty) return;
+    if (!isAdmin) {
+      final userId = _auth.userId;
+      if (userId == null || userId.isEmpty) return;
+    }
 
     isLoadingHistory.value = true;
     historyError.value = '';
 
     try {
-      final response = await _provider.getOrders(userId: userId);
+      final response = isAdmin
+          ? await _provider.getOrders()
+          : await _provider.getOrders(userId: _auth.userId);
 
       if (response.statusCode == 200) {
         final body = response.body;
@@ -173,6 +180,90 @@ class OrdersController extends GetxController
       historyError.value = 'No se pudo conectar con el servidor';
     } finally {
       isLoadingHistory.value = false;
+    }
+  }
+
+  // ── Admin actions ─────────────────────────────────────────────────────────────
+
+  Future<void> finalizeOrder(String orderId) async {
+    isActionLoading.value = true;
+    try {
+      final response = await _provider.finalizeOrder(orderId);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.back<void>();
+        await loadOrderHistory();
+        Get.snackbar(
+          'Pedido finalizado',
+          'El pedido fue completado exitosamente.',
+          backgroundColor: Globals.success,
+          colorText: Globals.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+        );
+      } else {
+        final message = response.body?['message']?.toString() ??
+            'Error al finalizar el pedido';
+        Get.snackbar(
+          'Error',
+          message,
+          backgroundColor: Globals.error,
+          colorText: Globals.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+        );
+      }
+    } catch (_) {
+      Get.snackbar(
+        'Error',
+        'No se pudo conectar con el servidor',
+        backgroundColor: Globals.error,
+        colorText: Globals.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+    } finally {
+      isActionLoading.value = false;
+    }
+  }
+
+  Future<void> rejectOrder(String orderId, {String? reason}) async {
+    isActionLoading.value = true;
+    try {
+      final response = await _provider.rejectOrder(orderId, reason: reason);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.back<void>();
+        await loadOrderHistory();
+        Get.snackbar(
+          'Pedido rechazado',
+          'El pedido fue rechazado.',
+          backgroundColor: Globals.pending,
+          colorText: Globals.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+        );
+      } else {
+        final message = response.body?['message']?.toString() ??
+            'Error al rechazar el pedido';
+        Get.snackbar(
+          'Error',
+          message,
+          backgroundColor: Globals.error,
+          colorText: Globals.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+        );
+      }
+    } catch (_) {
+      Get.snackbar(
+        'Error',
+        'No se pudo conectar con el servidor',
+        backgroundColor: Globals.error,
+        colorText: Globals.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+    } finally {
+      isActionLoading.value = false;
     }
   }
 }
