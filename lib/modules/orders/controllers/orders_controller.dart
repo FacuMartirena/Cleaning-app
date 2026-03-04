@@ -3,7 +3,8 @@ import 'package:get/get.dart';
 
 import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/order_item_model.dart';
-import 'package:bo_cleaning/core/models/order_model.dart' show OrderHistoryItemModel;
+import 'package:bo_cleaning/core/models/order_model.dart'
+    show OrderHistoryItemModel;
 import 'package:bo_cleaning/core/models/product_model.dart';
 import 'package:bo_cleaning/core/services/auth_service.dart';
 import 'package:bo_cleaning/modules/orders/services/orders_provider.dart';
@@ -28,13 +29,33 @@ class OrdersController extends GetxController
 
   bool get isAdmin => _auth.isAdmin;
 
+  bool get isLimpiador => (_auth.userRole ?? '') == 'Limpiador';
+
+  /// Selecciona la pestaña de carrito / \"Mi pedido\".
+  void goToCartTab() => tabController.index = 0;
+
+  /// Resetea por completo el estado de pedidos (carrito + historial).
+  void resetState() {
+    items.clear();
+    orderHistory.clear();
+  }
+
   @override
   void onInit() {
     super.onInit();
+    // Resetear estado cuando el usuario cierra sesión.
+    ever<bool>(_auth.isLoggedIn, (loggedIn) {
+      if (!loggedIn) {
+        resetState();
+      }
+    });
+
     tabController = TabController(length: 2, vsync: this);
     tabController.addListener(() {
       if (!tabController.indexIsChanging && tabController.index == 1) {
-        if (orderHistory.isEmpty && !isLoadingHistory.value) {
+        // Siempre recargar historial al entrar a la pestaña de historial,
+        // para evitar ver pedidos de un usuario anterior.
+        if (!isLoadingHistory.value) {
           loadOrderHistory();
         }
       }
@@ -95,10 +116,14 @@ class OrdersController extends GetxController
 
     isSubmitting.value = true;
     try {
-      final body = {
+      final body = <String, dynamic>{
         'userId': userId,
         'items': items.values.map((e) => e.toJson()).toList(),
       };
+      final companyId = _auth.companyId;
+      if (companyId != null && companyId.isNotEmpty) {
+        body['companyId'] = companyId;
+      }
 
       final response = await _provider.createOrder(body);
 
@@ -115,8 +140,8 @@ class OrdersController extends GetxController
           margin: const EdgeInsets.all(16),
         );
       } else {
-        final message = response.body?['message']?.toString() ??
-            'Error al crear el pedido';
+        final message =
+            response.body?['message']?.toString() ?? 'Error al crear el pedido';
         Get.snackbar(
           'Error',
           message,
@@ -143,7 +168,10 @@ class OrdersController extends GetxController
   // ── History ──────────────────────────────────────────────────────────────────
 
   Future<void> loadOrderHistory() async {
-    if (!isAdmin) {
+    final role = _auth.userRole ?? '';
+    final isLimpiador = role == 'Limpiador';
+
+    if (isLimpiador) {
       final userId = _auth.userId;
       if (userId == null || userId.isEmpty) return;
     }
@@ -152,9 +180,9 @@ class OrdersController extends GetxController
     historyError.value = '';
 
     try {
-      final response = isAdmin
-          ? await _provider.getOrders()
-          : await _provider.getOrders(userId: _auth.userId);
+      final response = isLimpiador
+          ? await _provider.getOrders(userId: _auth.userId)
+          : await _provider.getOrders(companyId: _auth.companyId);
 
       if (response.statusCode == 200) {
         final body = response.body;
@@ -168,9 +196,7 @@ class OrdersController extends GetxController
         }
         orderHistory.value = data
             .map(
-              (e) => OrderHistoryItemModel.fromJson(
-                e as Map<String, dynamic>,
-              ),
+              (e) => OrderHistoryItemModel.fromJson(e as Map<String, dynamic>),
             )
             .toList();
       } else {
@@ -201,7 +227,8 @@ class OrdersController extends GetxController
           margin: const EdgeInsets.all(16),
         );
       } else {
-        final message = response.body?['message']?.toString() ??
+        final message =
+            response.body?['message']?.toString() ??
             'Error al finalizar el pedido';
         Get.snackbar(
           'Error',
@@ -242,7 +269,8 @@ class OrdersController extends GetxController
           margin: const EdgeInsets.all(16),
         );
       } else {
-        final message = response.body?['message']?.toString() ??
+        final message =
+            response.body?['message']?.toString() ??
             'Error al rechazar el pedido';
         Get.snackbar(
           'Error',

@@ -21,9 +21,16 @@ class OrdersProvider extends GetConnect {
   Future<Response> createOrder(Map<String, dynamic> body) =>
       post(Globals.ordersPath, body);
 
-  Future<Response> getOrders({String? userId}) {
-    final query = userId != null && userId.isNotEmpty ? '?userId=$userId' : '';
-    return get('${Globals.ordersPath}$query');
+  /// GET /orders con filtro por rol:
+  /// - Si se envía [userId]: el backend debe filtrar por ese usuario (ej. limpiador ve solo sus pedidos).
+  /// - Si se envía [companyId]: el backend debe filtrar por esa compañía (ej. administrador ve pedidos de la empresa).
+  Future<Response> getOrders({String? userId, String? companyId}) {
+    final params = <String, dynamic>{};
+    if (userId != null && userId.isNotEmpty) params['userId'] = userId;
+    if (companyId != null && companyId.isNotEmpty) {
+      params['companyId'] = companyId;
+    }
+    return get(Globals.ordersPath, query: params.isEmpty ? null : params);
   }
 
   Future<Response> getOrderById(String orderId) =>

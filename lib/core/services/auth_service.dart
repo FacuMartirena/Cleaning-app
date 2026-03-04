@@ -8,9 +8,15 @@ import 'package:bo_cleaning/core/models/user_model.dart';
 class AuthService extends GetxService {
   final _box = GetStorage('User');
 
-  bool get isLoggedIn {
+  /// Estado reactivo de sesión. true cuando hay token válido.
+  final RxBool isLoggedIn = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    // Sembrar el estado desde el storage al iniciar el servicio.
     final t = _box.read<String>(Globals.storageToken) ?? '';
-    return t.isNotEmpty;
+    isLoggedIn.value = t.isNotEmpty;
   }
 
   String? get token => _box.read<String>(Globals.storageToken);
@@ -39,7 +45,11 @@ class AuthService extends GetxService {
 
   bool get isAdmin => userRole == 'Administrador';
 
-  void saveToken(String token) => _box.write(Globals.storageToken, token);
+  void saveToken(String token) {
+    _box.write(Globals.storageToken, token);
+    isLoggedIn.value = true;
+  }
+
   void saveUser(UserModel user) =>
       _box.write(Globals.storageUser, user.toJson());
 
@@ -56,5 +66,6 @@ class AuthService extends GetxService {
   void clearToken() {
     _box.remove(Globals.storageToken);
     _box.remove(Globals.storageUser);
+    isLoggedIn.value = false;
   }
 }

@@ -16,7 +16,7 @@ class SplashController extends GetxController {
   }
 
   void _goToLoginOrProducts() {
-    if (!_auth.isLoggedIn) {
+    if (!_auth.isLoggedIn.value) {
       Get.offAllNamed(AppRoutes.login);
       return;
     }

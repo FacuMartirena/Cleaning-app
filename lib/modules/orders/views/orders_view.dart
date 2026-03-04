@@ -182,6 +182,9 @@ class _HistoryTab extends StatelessWidget {
       }
 
       if (ctrl.orderHistory.isEmpty) {
+        final emptyMessage = ctrl.isLimpiador
+            ? 'Todavía no tienes pedidos realizados'
+            : 'Aún no tienes pedidos registrados';
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -192,9 +195,9 @@ class _HistoryTab extends StatelessWidget {
                 color: Globals.hint,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Aún no tienes pedidos registrados',
-                style: TextStyle(color: Globals.hint, fontSize: 16),
+              Text(
+                emptyMessage,
+                style: const TextStyle(color: Globals.hint, fontSize: 16),
               ),
               const SizedBox(height: 16),
               TextButton.icon(
