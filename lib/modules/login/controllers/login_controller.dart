@@ -96,7 +96,7 @@ class LoginController extends GetxController
         if (_authService.isAdmin && user.companyId == null) {
           Get.offAllNamed(AppRoutes.companySelect);
         } else {
-          Get.offAllNamed(AppRoutes.products);
+          Get.offAllNamed(AppRoutes.dashboard);
         }
       } else {
         final message =

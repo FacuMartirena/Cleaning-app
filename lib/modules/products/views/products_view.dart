@@ -12,6 +12,44 @@ import 'package:bo_cleaning/modules/products/widgets/add_product_sheet.dart';
 class ProductsView extends GetView<ProductsController> {
   const ProductsView({super.key});
 
+  void _showAddStockDialog(ProductModel product) {
+    controller.openAddStockDialog(product);
+    Get.dialog<void>(
+      AlertDialog(
+        title: Text('Agregar stock: ${product.name}'),
+        content: TextField(
+          controller: controller.addStockAmountController,
+          focusNode: controller.addStockFocusNode,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            labelText: 'Cantidad a agregar',
+            hintText: '0',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (_) {
+            Get.back<void>();
+            controller.submitAddStock();
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back<void>(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Get.back<void>();
+              controller.submitAddStock();
+            },
+            child: const Text('Agregar'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
   void _showAddProductSheet() {
     controller.openCreateProductSheet();
     Get.bottomSheet<void>(
@@ -217,6 +255,10 @@ class ProductsView extends GetView<ProductsController> {
                         controller.products[index],
                       ),
                       ordersCtrl: ordersCtrl,
+                      isAdmin: controller.isAdmin,
+                      onAddStock: () => _showAddStockDialog(
+                        controller.products[index],
+                      ),
                     );
                   },
                 ),
@@ -234,11 +276,15 @@ class _ProductTile extends StatelessWidget {
     required this.product,
     required this.assetPath,
     required this.ordersCtrl,
+    required this.isAdmin,
+    required this.onAddStock,
   });
 
   final ProductModel product;
   final String? assetPath;
   final OrdersController ordersCtrl;
+  final bool isAdmin;
+  final VoidCallback onAddStock;
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +330,17 @@ class _ProductTile extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            if (isAdmin) ...[
+              IconButton(
+                onPressed: onAddStock,
+                icon: const Icon(Icons.add_circle_outline, color: Globals.primary),
+                tooltip: 'Agregar stock',
+                style: IconButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
             Obx(
               () => _QuantitySelector(
                 quantity: ordersCtrl.quantityOf(product.id),

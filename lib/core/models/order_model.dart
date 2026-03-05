@@ -3,7 +3,97 @@ import 'package:flutter/material.dart';
 import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/product_model.dart';
 
-/// Representa un ítem de orden tal como lo devuelve el backend.
+/// Un ítem dentro de una orden en el historial (producto + cantidad).
+class OrderHistoryItemEntry {
+  final String id;
+  final ProductModel product;
+  final int quantity;
+
+  const OrderHistoryItemEntry({
+    required this.id,
+    required this.product,
+    required this.quantity,
+  });
+
+  factory OrderHistoryItemEntry.fromJson(Map<String, dynamic> json) {
+    final productJson = json['product'] as Map<String, dynamic>?;
+    return OrderHistoryItemEntry(
+      id: json['id']?.toString() ?? '',
+      quantity: (json['quantity'] as num?)?.toInt() ?? 0,
+      product: productJson != null
+          ? ProductModel.fromJson(productJson)
+          : ProductModel(
+              id: '',
+              name: 'Producto',
+              unitOfMeasure: '',
+              quantityAvailable: 0,
+              active: true,
+              lastUpdated: '',
+            ),
+    );
+  }
+}
+
+/// Una orden completa (un pedido) con su lista de productos.
+/// GET /api/orders → List of OrderHistoryModel
+class OrderHistoryModel {
+  final String id;
+  final int statusCode; // 0=Pendiente 1=Finalizado 2=Rechazado
+  final DateTime createdAt;
+  final String? reason;
+  final List<OrderHistoryItemEntry> items;
+
+  const OrderHistoryModel({
+    required this.id,
+    required this.statusCode,
+    required this.createdAt,
+    this.reason,
+    required this.items,
+  });
+
+  factory OrderHistoryModel.fromJson(Map<String, dynamic> json) {
+    final itemsJson = json['items'] as List<dynamic>? ?? [];
+    return OrderHistoryModel(
+      id: json['id']?.toString() ?? '',
+      statusCode: (json['statusCode'] as num?)?.toInt() ??
+          (json['status'] as num?)?.toInt() ??
+          0,
+      createdAt: DateTime.tryParse(
+            json['createdAt']?.toString() ?? json['date']?.toString() ?? '',
+          ) ??
+          DateTime.now(),
+      reason: json['reason']?.toString(),
+      items: itemsJson
+          .map(
+            (e) => OrderHistoryItemEntry.fromJson(e as Map<String, dynamic>),
+          )
+          .toList(),
+    );
+  }
+
+  /// Parsea un elemento: si tiene "items" es una orden nueva; si no, legacy (1 ítem).
+  static OrderHistoryModel fromJsonOrLegacy(Map<String, dynamic> json) {
+    if (json['items'] is List) {
+      return OrderHistoryModel.fromJson(json);
+    }
+    final single = OrderHistoryItemEntry.fromJson(json);
+    return OrderHistoryModel(
+      id: json['id']?.toString() ?? single.id,
+      statusCode:
+          (json['statusCode'] as num?)?.toInt() ??
+          (json['status'] as num?)?.toInt() ??
+          0,
+      createdAt: DateTime.tryParse(
+            json['createdAt']?.toString() ?? json['date']?.toString() ?? '',
+          ) ??
+          DateTime.now(),
+      reason: json['reason']?.toString(),
+      items: [single],
+    );
+  }
+}
+
+/// Representa un ítem de orden tal como lo devuelve el backend (formato legacy).
 /// GET /api/orders?userId=xxx → List of OrderHistoryItemModel
 class OrderHistoryItemModel {
   final String id;

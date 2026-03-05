@@ -34,6 +34,12 @@ class ProductsController extends GetxController {
       productAssetMap[product.id] ??
       productAssetMap[product.name];
 
+  // ── Add stock dialog state ───────────────────────────────────────────────────
+
+  final addStockAmountController = TextEditingController();
+  final addStockFocusNode = FocusNode();
+  ProductModel? _addStockProduct;
+
   // ── Create product state ─────────────────────────────────────────────────────
 
   late final FormGroup createProductForm;
@@ -78,6 +84,8 @@ class ProductsController extends GetxController {
   void onClose() {
     _searchWorker?.dispose();
     searchController.dispose();
+    addStockAmountController.dispose();
+    addStockFocusNode.dispose();
     createProductForm.dispose();
     super.onClose();
   }
@@ -162,6 +170,79 @@ class ProductsController extends GetxController {
       // silent — la lista existente se mantiene
     } finally {
       isLoadingMore.value = false;
+    }
+  }
+
+  // ── Update stock ─────────────────────────────────────────────────────────────
+
+  void openAddStockDialog(ProductModel product) {
+    _addStockProduct = product;
+    addStockAmountController.clear();
+  }
+
+  void submitAddStock() {
+    final product = _addStockProduct;
+    if (product == null) return;
+    final amount = num.tryParse(addStockAmountController.text.trim());
+    if (amount == null || amount <= 0) {
+      Get.snackbar(
+        'Cantidad inválida',
+        'La cantidad a agregar debe ser mayor a 0.',
+        backgroundColor: Globals.error,
+        colorText: Globals.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+    _addStockProduct = null;
+    addStock(product, amount);
+  }
+
+  Future<void> addStock(ProductModel product, num amount) async {
+    if (amount <= 0) {
+      Get.snackbar(
+        'Cantidad inválida',
+        'La cantidad a agregar debe ser mayor a 0.',
+        backgroundColor: Globals.error,
+        colorText: Globals.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+    final newQuantity = product.quantityAvailable + amount;
+    try {
+      final response =
+          await _provider.updateStock(product.id, newQuantity);
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        final updated = product.copyWith(quantityAvailable: newQuantity);
+        final idx = _allProducts.indexWhere((p) => p.id == product.id);
+        if (idx >= 0) _allProducts[idx] = updated;
+        _applyFilter();
+        Get.snackbar(
+          'Stock actualizado',
+          'Se agregaron $amount a "${product.name}". Nuevo total: $newQuantity.',
+          backgroundColor: Globals.success,
+          colorText: Globals.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          response.body?['message']?.toString() ??
+              'No se pudo actualizar el stock.',
+          backgroundColor: Globals.error,
+          colorText: Globals.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (_) {
+      Get.snackbar(
+        'Error de conexión',
+        'No se pudo conectar con el servidor.',
+        backgroundColor: Globals.error,
+        colorText: Globals.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 

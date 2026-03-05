@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:bo_cleaning/config/router/app_routes.dart';
 import 'package:bo_cleaning/modules/company_select/bindings/company_select_binding.dart';
 import 'package:bo_cleaning/modules/company_select/views/company_select_view.dart';
+import 'package:bo_cleaning/modules/dashboard/bindings/dashboard_binding.dart';
+import 'package:bo_cleaning/modules/dashboard/views/dashboard_view.dart';
 import 'package:bo_cleaning/modules/login/bindings/login_binding.dart';
 import 'package:bo_cleaning/modules/login/views/login_view.dart';
 import 'package:bo_cleaning/modules/orders/bindings/orders_binding.dart';
@@ -30,6 +32,11 @@ abstract class AppPages {
       name: AppRoutes.companySelect,
       page: () => const CompanySelectView(),
       binding: CompanySelectBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.dashboard,
+      page: () => const DashboardView(),
+      binding: DashboardBinding(),
     ),
     GetPage(
       name: AppRoutes.products,

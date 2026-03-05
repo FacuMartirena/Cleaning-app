@@ -24,4 +24,11 @@ class ProductsProvider extends GetConnect {
 
   Future<Response> createProduct(FormData formData) =>
       post(Globals.productsPath, formData);
+
+  /// Actualiza el stock de un producto. Envía el nuevo total (quantityAvailable).
+  Future<Response> updateStock(String productId, num newQuantity) =>
+      patch(
+        '${Globals.productsPath}/$productId',
+        {'quantityAvailable': newQuantity},
+      );
 }
