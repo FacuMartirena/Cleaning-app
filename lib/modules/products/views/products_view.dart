@@ -224,7 +224,7 @@ class ProductsView extends GetView<ProductsController> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: controller.products.length + 1,
                   itemBuilder: (context, index) {
-                    if (index == controller.products.length) {
+                    if (index >= controller.products.length) {
                       return Obx(() {
                         if (controller.isLoadingMore.value) {
                           return const Padding(
@@ -249,16 +249,13 @@ class ProductsView extends GetView<ProductsController> {
                         return const SizedBox.shrink();
                       });
                     }
+                    final product = controller.products[index];
                     return _ProductTile(
-                      product: controller.products[index],
-                      assetPath: controller.getAssetPathForProduct(
-                        controller.products[index],
-                      ),
+                      product: product,
+                      assetPath: controller.getAssetPathForProduct(product),
                       ordersCtrl: ordersCtrl,
                       isAdmin: controller.isAdmin,
-                      onAddStock: () => _showAddStockDialog(
-                        controller.products[index],
-                      ),
+                      onAddStock: () => _showAddStockDialog(product),
                     );
                   },
                 ),
@@ -333,7 +330,10 @@ class _ProductTile extends StatelessWidget {
             if (isAdmin) ...[
               IconButton(
                 onPressed: onAddStock,
-                icon: const Icon(Icons.add_circle_outline, color: Globals.primary),
+                icon: const Icon(
+                  Icons.add_circle_outline,
+                  color: Globals.primary,
+                ),
                 tooltip: 'Agregar stock',
                 style: IconButton.styleFrom(
                   visualDensity: VisualDensity.compact,
