@@ -313,15 +313,18 @@ class UsersView extends GetView<UsersController> {
                             formControlName: 'companyId',
                             decoration: _inputDecoration(
                               null,
-                            ).copyWith(hintText: 'Sin empresa'),
+                            ).copyWith(
+                              hintText: controller.companyDropdownHint,
+                            ),
                             items: [
-                              const DropdownMenuItem<String?>(
-                                value: null,
-                                child: Text(
-                                  'Sin empresa',
-                                  style: TextStyle(color: Globals.hint),
+                              if (controller.companyOptionalForCreate)
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text(
+                                    'Sin empresa',
+                                    style: TextStyle(color: Globals.hint),
+                                  ),
                                 ),
-                              ),
                               ...controller.companies.map(
                                 (c) => DropdownMenuItem<String?>(
                                   value: c.id,

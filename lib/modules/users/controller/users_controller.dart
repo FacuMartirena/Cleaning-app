@@ -39,11 +39,14 @@ class UsersController extends GetxController {
 
   bool get isAdmin => _auth.isAdmin;
 
-  /// Roles que se muestran en el dropdown según el rol del usuario actual.
-  /// - Administrador: puede crear cualquier rol.
-  /// - Administrativo: no puede crear Administradores.
-  List<String> get availableRoles =>
-      isAdmin ? allowedRoles : allowedRoles.where((r) => r != 'Administrador').toList();
+  List<String> get availableRoles => isAdmin
+      ? allowedRoles
+      : allowedRoles.where((r) => r != 'Administrador').toList();
+
+  bool get companyOptionalForCreate => isAdmin;
+
+  String get companyDropdownHint =>
+      companyOptionalForCreate ? 'Sin empresa' : 'Seleccione una empresa';
 
   @override
   void onInit() {
@@ -68,7 +71,9 @@ class UsersController extends GetxController {
         validators: [Validators.required],
       ),
       'active': FormControl<bool>(value: true),
-      'companyId': FormControl<String?>(),
+      'companyId': FormControl<String?>(
+        validators: [if (!_auth.isAdmin) Validators.required],
+      ),
     });
   }
 
@@ -269,6 +274,17 @@ class UsersController extends GetxController {
     }
 
     final values = createUserForm.value;
+    final companyId = values['companyId'] as String?;
+    if (!companyOptionalForCreate && (companyId == null || companyId.isEmpty)) {
+      Get.snackbar(
+        'Empresa requerida',
+        'Debe seleccionar una empresa para crear el usuario.',
+        backgroundColor: Globals.error,
+        colorText: Globals.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
     isLoading.value = true;
     try {
       final body = UserModel.createBody(
