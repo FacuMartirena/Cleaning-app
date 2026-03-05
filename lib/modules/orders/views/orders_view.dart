@@ -812,6 +812,61 @@ class _CartSummary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (ctrl.isAdmin) ...[
+            const Text(
+              'Realizar pedido a nombre de:',
+              style: TextStyle(
+                color: Globals.hint,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Obx(() {
+              if (ctrl.isLoadingUsersForOrder.value) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                );
+              }
+              final users = ctrl.usersForOrder;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Globals.hint),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButton<String?>(
+                  value: ctrl.orderOnBehalfOfUserId.value,
+                  isExpanded: true,
+                  hint: Text(ctrl.currentUserFullName),
+                  underline: const SizedBox.shrink(),
+                  items: [
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(ctrl.currentUserFullName),
+                    ),
+                    ...users.map(
+                      (u) => DropdownMenuItem<String?>(
+                        value: u.id,
+                        child: Text(
+                          '${u.firstName} ${u.lastName} (${u.role})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                  onChanged: (id) => ctrl.orderOnBehalfOfUserId.value = id,
+                ),
+              );
+            }),
+            const SizedBox(height: 16),
+          ],
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

@@ -14,7 +14,7 @@ class AuthService extends GetxService {
   @override
   void onInit() {
     super.onInit();
-    // Sembrar el estado desde el storage al iniciar el servicio.
+    // Crear el estado desde el storage al iniciar el servicio.
     final t = _box.read<String>(Globals.storageToken) ?? '';
     isLoggedIn.value = t.isNotEmpty;
   }
@@ -27,6 +27,23 @@ class AuthService extends GetxService {
     return data['id']?.toString();
   }
 
+  String? get userFirstName {
+    final data = _box.read<Map<dynamic, dynamic>>(Globals.storageUser);
+    return data?['firstName']?.toString();
+  }
+
+  String? get userLastName {
+    final data = _box.read<Map<dynamic, dynamic>>(Globals.storageUser);
+    return data?['lastName']?.toString();
+  }
+
+  String get userFullName {
+    final data = _box.read<Map<dynamic, dynamic>>(Globals.storageUser);
+    final first = data?['firstName']?.toString() ?? '';
+    final last = data?['lastName']?.toString() ?? '';
+    return '$first $last'.trim();
+  }
+
   String? get userRole {
     final data = _box.read<Map<dynamic, dynamic>>(Globals.storageUser);
     return data?['role']?.toString();
@@ -34,7 +51,10 @@ class AuthService extends GetxService {
 
   String? get companyId {
     final data = _box.read<Map<dynamic, dynamic>>(Globals.storageUser);
-    return data?['companyId']?.toString();
+    final id = data?['companyId']?.toString();
+    if (id != null && id.isNotEmpty) return id;
+    final company = data?['company'] as Map<dynamic, dynamic>?;
+    return company?['id']?.toString();
   }
 
   String? get companyName {

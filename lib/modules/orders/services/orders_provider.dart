@@ -22,11 +22,12 @@ class OrdersProvider extends GetConnect {
       post(Globals.ordersPath, body);
 
   /// GET /orders:
-  /// - Si se envía [userId]: el backend filtra por ese usuario (limpiador ve solo sus pedidos).
-  /// - Si no se envía nada: el backend aplica sus reglas por rol/compañía.
-  Future<Response> getOrders({String? userId}) {
+  /// - [userId]: filtra por usuario (limpiador ve solo sus pedidos).
+  /// - [companyId]: filtra por empresa (staff con empresa seleccionada).
+  Future<Response> getOrders({String? userId, String? companyId}) {
     final params = <String, dynamic>{};
     if (userId != null && userId.isNotEmpty) params['userId'] = userId;
+    if (companyId != null && companyId.isNotEmpty) params['companyId'] = companyId;
     return get(Globals.ordersPath, query: params.isEmpty ? null : params);
   }
 

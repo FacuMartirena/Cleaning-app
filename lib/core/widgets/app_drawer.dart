@@ -56,15 +56,16 @@ class AppDrawer extends StatelessWidget {
               ],
             ),
           ),
-          _DrawerMenuTile(
-            icon: Icons.dashboard_outlined,
-            label: 'Inicio',
-            semanticsLabel: 'Ir al inicio',
-            onTap: () {
-              Get.back();
-              Get.offAllNamed(AppRoutes.dashboard);
-            },
-          ),
+          if (auth.isStaff)
+            _DrawerMenuTile(
+              icon: Icons.dashboard_outlined,
+              label: 'Inicio',
+              semanticsLabel: 'Ir al inicio',
+              onTap: () {
+                Get.back();
+                Get.offAllNamed(AppRoutes.dashboard);
+              },
+            ),
           _DrawerMenuTile(
             icon: Icons.inventory_2_outlined,
             label: 'Productos',

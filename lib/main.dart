@@ -1,6 +1,7 @@
 import 'package:bo_cleaning/core/services/auth_service.dart';
 import 'package:bo_cleaning/modules/orders/controllers/orders_controller.dart';
 import 'package:bo_cleaning/modules/orders/services/orders_provider.dart';
+import 'package:bo_cleaning/modules/users/services/users_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -14,6 +15,7 @@ void main() async {
   await GetStorage.init('User');
   await Get.putAsync<AuthService>(() async => AuthService());
   Get.put<OrdersProvider>(OrdersProvider(), permanent: true);
+  Get.put<UsersProvider>(UsersProvider(), permanent: true);
   Get.put<OrdersController>(OrdersController(), permanent: true);
   runApp(const MyApp());
 }

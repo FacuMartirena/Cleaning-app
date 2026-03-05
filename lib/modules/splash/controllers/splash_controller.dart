@@ -22,8 +22,10 @@ class SplashController extends GetxController {
     }
     if (_auth.isAdmin && _auth.companyId == null) {
       Get.offAllNamed(AppRoutes.companySelect);
-    } else {
+    } else if (_auth.isStaff) {
       Get.offAllNamed(AppRoutes.dashboard);
+    } else {
+      Get.offAllNamed(AppRoutes.products);
     }
   }
 }

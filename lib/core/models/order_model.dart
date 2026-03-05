@@ -35,7 +35,6 @@ class OrderHistoryItemEntry {
 }
 
 /// Una orden completa (un pedido) con su lista de productos.
-/// GET /api/orders → List of OrderHistoryModel
 class OrderHistoryModel {
   final String id;
   final int statusCode; // 0=Pendiente 1=Finalizado 2=Rechazado
@@ -55,18 +54,18 @@ class OrderHistoryModel {
     final itemsJson = json['items'] as List<dynamic>? ?? [];
     return OrderHistoryModel(
       id: json['id']?.toString() ?? '',
-      statusCode: (json['statusCode'] as num?)?.toInt() ??
+      statusCode:
+          (json['statusCode'] as num?)?.toInt() ??
           (json['status'] as num?)?.toInt() ??
           0,
-      createdAt: DateTime.tryParse(
+      createdAt:
+          DateTime.tryParse(
             json['createdAt']?.toString() ?? json['date']?.toString() ?? '',
-          ) ??
+          )?.toLocal() ??
           DateTime.now(),
       reason: json['reason']?.toString(),
       items: itemsJson
-          .map(
-            (e) => OrderHistoryItemEntry.fromJson(e as Map<String, dynamic>),
-          )
+          .map((e) => OrderHistoryItemEntry.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -83,9 +82,10 @@ class OrderHistoryModel {
           (json['statusCode'] as num?)?.toInt() ??
           (json['status'] as num?)?.toInt() ??
           0,
-      createdAt: DateTime.tryParse(
+      createdAt:
+          DateTime.tryParse(
             json['createdAt']?.toString() ?? json['date']?.toString() ?? '',
-          ) ??
+          )?.toLocal() ??
           DateTime.now(),
       reason: json['reason']?.toString(),
       items: [single],
@@ -94,7 +94,6 @@ class OrderHistoryModel {
 }
 
 /// Representa un ítem de orden tal como lo devuelve el backend (formato legacy).
-/// GET /api/orders?userId=xxx → List of OrderHistoryItemModel
 class OrderHistoryItemModel {
   final String id;
   final int quantity;
@@ -118,7 +117,8 @@ class OrderHistoryItemModel {
       id: json['id']?.toString() ?? '',
       quantity: (json['quantity'] as num?)?.toInt() ?? 0,
       date:
-          DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['date']?.toString() ?? '')?.toLocal() ??
+          DateTime.now(),
       statusCode: (json['status'] as num?)?.toInt() ?? 0,
       reason: json['reason']?.toString(),
       product: productJson != null

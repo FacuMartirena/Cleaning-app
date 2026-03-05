@@ -10,7 +10,6 @@ class LoginView extends GetView<LoginController> {
 
   @override
   Widget build(BuildContext context) {
-    // ── Adaptive: center on tablet / desktop ────────────────────────────────────
     final isWide = MediaQuery.sizeOf(context).width >= 600;
 
     return Scaffold(
@@ -136,8 +135,9 @@ class LoginView extends GetView<LoginController> {
                                   : controller.login,
                               borderRadius: BorderRadius.circular(5),
                               child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(5),
                                   gradient: const LinearGradient(
@@ -188,10 +188,7 @@ class LoginView extends GetView<LoginController> {
 // ── Animated section wrapper (explicit animation from controller) ─────────────
 
 class _AnimatedSection extends StatelessWidget {
-  const _AnimatedSection({
-    required this.animation,
-    required this.child,
-  });
+  const _AnimatedSection({required this.animation, required this.child});
 
   final Animation<double> animation;
   final Widget child;

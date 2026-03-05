@@ -62,9 +62,9 @@ class DashboardView extends GetView<DashboardController> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 8),
-                const Text(
-                  'Mis órdenes',
-                  style: TextStyle(
+                Text(
+                  controller.ordersSectionTitle,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Globals.hint,

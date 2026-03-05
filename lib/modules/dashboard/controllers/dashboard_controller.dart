@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import 'package:bo_cleaning/config/router/app_routes.dart';
 import 'package:bo_cleaning/core/models/order_model.dart';
 import 'package:bo_cleaning/core/models/product_model.dart';
 import 'package:bo_cleaning/core/services/auth_service.dart';
@@ -30,10 +31,24 @@ class DashboardController extends GetxController {
   @override
   void onReady() {
     super.onReady();
+    if (!_auth.isStaff) {
+      Get.offAllNamed(AppRoutes.products);
+      return;
+    }
     loadDashboard();
   }
 
   bool get isStaff => _auth.isStaff;
+
+  String get ordersSectionTitle {
+    if (isStaff) {
+      final name = _auth.companyName;
+      if (name != null && name.isNotEmpty) {
+        return 'Órdenes de $name';
+      }
+    }
+    return 'Mis órdenes';
+  }
 
   Future<void> loadDashboard() async {
     isLoading.value = true;
@@ -52,7 +67,9 @@ class DashboardController extends GetxController {
     }
 
     try {
-      final response = await _ordersProvider.getOrders(userId: userId);
+      final response = _auth.isStaff
+          ? await _ordersProvider.getOrders(companyId: _auth.companyId)
+          : await _ordersProvider.getOrders(userId: userId);
       if (response.statusCode == 200) {
         final body = response.body;
         List<dynamic> data;
@@ -104,8 +121,8 @@ class DashboardController extends GetxController {
           final list = body is List
               ? body
               : body is Map && body['data'] is List
-                  ? body['data'] as List
-                  : <dynamic>[];
+              ? body['data'] as List
+              : <dynamic>[];
           final lowStock = list
               .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
               .where((p) => p.quantityAvailable < 10 && p.active)

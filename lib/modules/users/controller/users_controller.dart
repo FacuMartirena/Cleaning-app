@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'package:bo_cleaning/core/constants/globals.dart';
+import 'package:bo_cleaning/core/services/auth_service.dart';
 import 'package:bo_cleaning/core/models/company_model.dart';
 import 'package:bo_cleaning/core/models/user_model.dart';
 import 'package:bo_cleaning/modules/companies/services/companies_provider.dart';
@@ -18,6 +19,7 @@ const List<String> allowedRoles = [
 class UsersController extends GetxController {
   final UsersProvider _provider = Get.find<UsersProvider>();
   final CompaniesProvider _companiesProvider = Get.find<CompaniesProvider>();
+  final AuthService _auth = Get.find<AuthService>();
 
   final _allUsers = <UserModel>[];
   final users = <UserModel>[].obs;
@@ -34,6 +36,14 @@ class UsersController extends GetxController {
 
   // ── Formulario de creación (Reactive Forms) ──────────────────────────────────
   late final FormGroup createUserForm;
+
+  bool get isAdmin => _auth.isAdmin;
+
+  /// Roles que se muestran en el dropdown según el rol del usuario actual.
+  /// - Administrador: puede crear cualquier rol.
+  /// - Administrativo: no puede crear Administradores.
+  List<String> get availableRoles =>
+      isAdmin ? allowedRoles : allowedRoles.where((r) => r != 'Administrador').toList();
 
   @override
   void onInit() {
@@ -309,7 +319,20 @@ class UsersController extends GetxController {
 
   void openCreateUserDialog() => _resetCreateForm();
 
+  /// Las cuentas con rol Administrador no pueden desactivarse desde la app.
+  bool canDeactivateUser(UserModel user) => user.role != 'Administrador';
+
   Future<void> toggleActive(UserModel user) async {
+    if (!canDeactivateUser(user)) {
+      Get.snackbar(
+        'No permitido',
+        'Las cuentas de administrador no se pueden desactivar.',
+        backgroundColor: Globals.error,
+        colorText: Globals.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
     final isActive = user.active;
     try {
       final response = isActive

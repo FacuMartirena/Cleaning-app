@@ -5,8 +5,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/user_model.dart';
 import 'package:bo_cleaning/core/widgets/app_drawer.dart';
-import 'package:bo_cleaning/modules/users/controller/users_controller.dart'
-    show UsersController, allowedRoles;
+import 'package:bo_cleaning/modules/users/controller/users_controller.dart';
 
 class UsersView extends GetView<UsersController> {
   const UsersView({super.key});
@@ -123,8 +122,9 @@ class UsersView extends GetView<UsersController> {
                 itemCount: controller.users.length,
                 itemBuilder: (context, index) => _UserTile(
                   user: controller.users[index],
-                  onToggle: () =>
-                      controller.toggleActive(controller.users[index]),
+                  onToggle: controller.canDeactivateUser(controller.users[index])
+                      ? () => controller.toggleActive(controller.users[index])
+                      : null,
                 ),
               );
             }),
@@ -251,7 +251,7 @@ class UsersView extends GetView<UsersController> {
                         borderRadius: BorderRadius.circular(5),
                       ),
                     ),
-                    items: allowedRoles
+                    items: controller.availableRoles
                         .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                         .toList(),
                   ),
@@ -417,10 +417,10 @@ class UsersView extends GetView<UsersController> {
 // ── User tile ─────────────────────────────────────────────────────────────────
 
 class _UserTile extends StatelessWidget {
-  const _UserTile({required this.user, required this.onToggle});
+  const _UserTile({required this.user, this.onToggle});
 
   final UserModel user;
-  final VoidCallback onToggle;
+  final VoidCallback? onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -461,7 +461,7 @@ class _UserTile extends StatelessWidget {
             ),
             Switch(
               value: user.active,
-              onChanged: (_) => onToggle(),
+              onChanged: onToggle != null ? (_) => onToggle!() : null,
               activeColor: Globals.primary,
               inactiveThumbColor: Globals.hint,
             ),
