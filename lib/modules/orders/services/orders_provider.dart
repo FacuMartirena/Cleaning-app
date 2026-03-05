@@ -21,15 +21,12 @@ class OrdersProvider extends GetConnect {
   Future<Response> createOrder(Map<String, dynamic> body) =>
       post(Globals.ordersPath, body);
 
-  /// GET /orders con filtro por rol:
-  /// - Si se envía [userId]: el backend debe filtrar por ese usuario (ej. limpiador ve solo sus pedidos).
-  /// - Si se envía [companyId]: el backend debe filtrar por esa compañía (ej. administrador ve pedidos de la empresa).
-  Future<Response> getOrders({String? userId, String? companyId}) {
+  /// GET /orders:
+  /// - Si se envía [userId]: el backend filtra por ese usuario (limpiador ve solo sus pedidos).
+  /// - Si no se envía nada: el backend aplica sus reglas por rol/compañía.
+  Future<Response> getOrders({String? userId}) {
     final params = <String, dynamic>{};
     if (userId != null && userId.isNotEmpty) params['userId'] = userId;
-    if (companyId != null && companyId.isNotEmpty) {
-      params['companyId'] = companyId;
-    }
     return get(Globals.ordersPath, query: params.isEmpty ? null : params);
   }
 
@@ -40,7 +37,7 @@ class OrdersProvider extends GetConnect {
       patch('${Globals.ordersPath}/$id/finalize', {});
 
   Future<Response> rejectOrder(String id, {String? reason}) => patch(
-        '${Globals.ordersPath}/$id/reject',
-        reason != null && reason.isNotEmpty ? {'reason': reason} : {},
-      );
+    '${Globals.ordersPath}/$id/reject',
+    reason != null && reason.isNotEmpty ? {'reason': reason} : {},
+  );
 }

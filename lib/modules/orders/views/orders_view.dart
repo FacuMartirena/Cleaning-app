@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/order_item_model.dart';
 import 'package:bo_cleaning/core/models/order_model.dart'
-    show OrderHistoryItemModel;
+    show OrderHistoryItemModel, OrderHistoryModel;
 import 'package:bo_cleaning/core/widgets/app_drawer.dart';
 import 'package:bo_cleaning/modules/orders/controllers/orders_controller.dart';
 import 'package:bo_cleaning/modules/products/controllers/products_controller.dart';
@@ -182,7 +182,7 @@ class _HistoryTab extends StatelessWidget {
       }
 
       if (ctrl.orderHistory.isEmpty) {
-        final emptyMessage = ctrl.isLimpiador
+        final emptyMessage = ctrl.isCleaner
             ? 'Todavía no tienes pedidos realizados'
             : 'Aún no tienes pedidos registrados';
         return Center(
@@ -220,10 +220,10 @@ class _HistoryTab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: ctrl.orderHistory.length,
           itemBuilder: (context, index) {
-            final item = ctrl.orderHistory[index];
+            final order = ctrl.orderHistory[index];
             return _OrderHistoryCard(
-              item: item,
-              onTap: () => _showOrderDetail(item),
+              order: order,
+              onTap: () => _showOrderDetail(order),
             );
           },
         ),
@@ -231,14 +231,14 @@ class _HistoryTab extends StatelessWidget {
     });
   }
 
-  void _showOrderDetail(OrderHistoryItemModel item) {
+  void _showOrderDetail(OrderHistoryModel order) {
     Get.bottomSheet<void>(
       Container(
         decoration: const BoxDecoration(
           color: Globals.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: _OrderDetailSheet(item: item),
+        child: _OrderDetailSheet(order: order, isAdmin: ctrl.isAdmin),
       ),
       isScrollControlled: true,
       backgroundColor: Globals.transparent,
@@ -249,18 +249,24 @@ class _HistoryTab extends StatelessWidget {
   }
 }
 
-// ── Tarjeta de historial ──────────────────────────────────────────────────────
+// ── Tarjeta de historial (una por pedido) ──────────────────────────────────────
 
 class _OrderHistoryCard extends StatelessWidget {
-  const _OrderHistoryCard({required this.item, required this.onTap});
+  const _OrderHistoryCard({required this.order, required this.onTap});
 
-  final OrderHistoryItemModel item;
+  final OrderHistoryModel order;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = OrderHistoryItemModel.statusColor(item.statusCode);
-    final statusLabel = OrderHistoryItemModel.statusLabel(item.statusCode);
+    final statusColor = OrderHistoryItemModel.statusColor(order.statusCode);
+    final statusLabel = OrderHistoryItemModel.statusLabel(order.statusCode);
+    final count = order.items.length;
+    final summary = count == 0
+        ? 'Sin productos'
+        : count == 1
+            ? '${order.items.first.product.name}  ·  ×${order.items.first.quantity}'
+            : '${order.items.length} productos';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -290,7 +296,7 @@ class _OrderHistoryCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            item.product.name,
+                            summary,
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
@@ -304,18 +310,13 @@ class _OrderHistoryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${item.product.unitOfMeasure}  ·  ×${item.quantity}',
-                      style: const TextStyle(fontSize: 12, color: Globals.hint),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      OrderHistoryItemModel.formatDate(item.date),
+                      OrderHistoryItemModel.formatDate(order.createdAt),
                       style: const TextStyle(fontSize: 11, color: Globals.hint),
                     ),
-                    if (item.reason != null && item.reason!.isNotEmpty) ...[
+                    if (order.reason != null && order.reason!.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
-                        'Motivo: ${item.reason}',
+                        'Motivo: ${order.reason}',
                         style: const TextStyle(
                           fontSize: 11,
                           color: Globals.error,
@@ -366,144 +367,133 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-// ── Bottom sheet de detalle ───────────────────────────────────────────────────
+// ── Bottom sheet de detalle (pedido con varios productos) ──────────────────────
 
 class _OrderDetailSheet extends StatelessWidget {
-  const _OrderDetailSheet({required this.item});
+  const _OrderDetailSheet({required this.order, required this.isAdmin});
 
-  final OrderHistoryItemModel item;
+  final OrderHistoryModel order;
+  final bool isAdmin;
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = OrderHistoryItemModel.statusColor(item.statusCode);
-    final statusLabel = OrderHistoryItemModel.statusLabel(item.statusCode);
+    final statusColor = OrderHistoryItemModel.statusColor(order.statusCode);
+    final statusLabel = OrderHistoryItemModel.statusLabel(order.statusCode);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Globals.hint.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Globals.hint.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
 
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Detalle del ítem',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Detalle del pedido',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                _StatusBadge(label: statusLabel, color: statusColor),
+              ],
+            ),
+            const Divider(height: 24),
+
+            // Fecha
+            _DetailRow(
+              icon: Icons.calendar_today_outlined,
+              label: 'Fecha',
+              value: OrderHistoryItemModel.formatDate(order.createdAt),
+            ),
+            const SizedBox(height: 16),
+
+            // Motivo (solo si está rechazado)
+            if (order.reason != null && order.reason!.isNotEmpty) ...[
+              _DetailRow(
+                icon: Icons.info_outline,
+                label: 'Motivo',
+                value: order.reason!,
+                valueColor: Globals.error,
               ),
-              _StatusBadge(label: statusLabel, color: statusColor),
+              const SizedBox(height: 16),
             ],
-          ),
-          const Divider(height: 24),
 
-          // Producto
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Globals.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.inventory_2,
-                  size: 22,
-                  color: Globals.primary,
-                ),
+            // Lista de productos del pedido
+            Text(
+              'Productos (${order.items.length})',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Globals.hint,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            const SizedBox(height: 8),
+            ...order.items.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
                   children: [
-                    Text(
-                      item.product.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Globals.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.inventory_2,
+                        size: 18,
+                        color: Globals.primary,
                       ),
                     ),
-                    Text(
-                      item.product.unitOfMeasure,
-                      style: const TextStyle(fontSize: 12, color: Globals.hint),
-                    ),
-                    if (item.product.description != null &&
-                        item.product.description!.isNotEmpty)
-                      Text(
-                        item.product.description!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Globals.hint,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.product.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            '${entry.product.unitOfMeasure}  ·  ×${entry.quantity}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Globals.hint,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Globals.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '×${item.quantity}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Globals.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const Divider(height: 24),
-
-          // Fecha
-          _DetailRow(
-            icon: Icons.calendar_today_outlined,
-            label: 'Fecha',
-            value: OrderHistoryItemModel.formatDate(item.date),
-          ),
-          const SizedBox(height: 8),
-
-          // Motivo (solo si está cancelado)
-          if (item.reason != null && item.reason!.isNotEmpty) ...[
-            _DetailRow(
-              icon: Icons.info_outline,
-              label: 'Motivo',
-              value: item.reason!,
-              valueColor: Globals.error,
             ),
-            const SizedBox(height: 8),
-          ],
 
-          // Acciones de admin (solo pedidos pendientes)
-          if (item.statusCode == 0 && Get.find<OrdersController>().isAdmin) ...[
-            const Divider(height: 24),
-            _AdminActions(item: item),
+            // Acciones de admin (solo pedidos pendientes)
+            if (order.statusCode == 0 && isAdmin) ...[
+              const Divider(height: 24),
+              _AdminActions(order: order),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -512,9 +502,9 @@ class _OrderDetailSheet extends StatelessWidget {
 // ── Acciones de admin (finalizar / rechazar) ──────────────────────────────────
 
 class _AdminActions extends StatelessWidget {
-  const _AdminActions({required this.item});
+  const _AdminActions({required this.order});
 
-  final OrderHistoryItemModel item;
+  final OrderHistoryModel order;
 
   @override
   Widget build(BuildContext context) {
@@ -580,7 +570,7 @@ class _AdminActions extends StatelessWidget {
       AlertDialog(
         title: const Text('Finalizar pedido'),
         content: const Text(
-          '¿Confirmas que deseas finalizar este pedido? Se descontará el stock del producto.',
+          '¿Confirmas que deseas finalizar este pedido? Se descontará el stock de los productos.',
         ),
         actions: [
           TextButton(onPressed: Get.back, child: const Text('Cancelar')),
@@ -588,7 +578,7 @@ class _AdminActions extends StatelessWidget {
             style: FilledButton.styleFrom(backgroundColor: Globals.success),
             onPressed: () {
               Get.back<void>();
-              ctrl.finalizeOrder(item.id);
+              ctrl.finalizeOrder(order.id);
             },
             child: const Text('Finalizar'),
           ),
@@ -624,7 +614,7 @@ class _AdminActions extends StatelessWidget {
             onPressed: () {
               final reason = reasonCtrl.text.trim();
               Get.back<void>();
-              ctrl.rejectOrder(item.id, reason: reason.isEmpty ? null : reason);
+              ctrl.rejectOrder(order.id, reason: reason.isEmpty ? null : reason);
             },
             child: const Text('Rechazar'),
           ),

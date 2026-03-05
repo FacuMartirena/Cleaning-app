@@ -42,7 +42,7 @@ class CompanySelectController extends GetxController {
 
   void selectCompany(CompanyModel company) {
     _auth.updateUserCompany(company);
-    Get.offAllNamed(AppRoutes.products);
+    Get.offAllNamed(AppRoutes.dashboard);
   }
 
   void logout() {

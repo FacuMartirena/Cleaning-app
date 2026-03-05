@@ -3,8 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:bo_cleaning/core/constants/globals.dart';
 import 'package:bo_cleaning/core/models/order_item_model.dart';
-import 'package:bo_cleaning/core/models/order_model.dart'
-    show OrderHistoryItemModel;
+import 'package:bo_cleaning/core/models/order_model.dart' show OrderHistoryModel;
 import 'package:bo_cleaning/core/models/product_model.dart';
 import 'package:bo_cleaning/core/services/auth_service.dart';
 import 'package:bo_cleaning/modules/orders/services/orders_provider.dart';
@@ -22,14 +21,14 @@ class OrdersController extends GetxController
   final isSubmitting = false.obs;
 
   // ── Order history ────────────────────────────────────────────────────────────
-  final orderHistory = <OrderHistoryItemModel>[].obs;
+  final orderHistory = <OrderHistoryModel>[].obs;
   final isLoadingHistory = false.obs;
   final historyError = ''.obs;
   final isActionLoading = false.obs;
 
   bool get isAdmin => _auth.isAdmin;
 
-  bool get isLimpiador => (_auth.userRole ?? '') == 'Limpiador';
+  bool get isCleaner => (_auth.userRole ?? '') == 'Limpiador';
 
   /// Selecciona la pestaña de carrito / \"Mi pedido\".
   void goToCartTab() => tabController.index = 0;
@@ -120,10 +119,6 @@ class OrdersController extends GetxController
         'userId': userId,
         'items': items.values.map((e) => e.toJson()).toList(),
       };
-      final companyId = _auth.companyId;
-      if (companyId != null && companyId.isNotEmpty) {
-        body['companyId'] = companyId;
-      }
 
       final response = await _provider.createOrder(body);
 
@@ -168,21 +163,31 @@ class OrdersController extends GetxController
   // ── History ──────────────────────────────────────────────────────────────────
 
   Future<void> loadOrderHistory() async {
-    final role = _auth.userRole ?? '';
-    final isLimpiador = role == 'Limpiador';
+    final hasCompany = (_auth.companyId ?? '').isNotEmpty;
 
-    if (isLimpiador) {
+    if (isCleaner) {
       final userId = _auth.userId;
-      if (userId == null || userId.isEmpty) return;
+      if (userId == null || userId.isEmpty) {
+        historyError.value =
+            'No se pudo identificar al usuario. Vuelve a iniciar sesión.';
+        return;
+      }
+    } else {
+      // Para administradores/administrativos exigimos una empresa seleccionada.
+      if (!hasCompany) {
+        historyError.value =
+            'Debes seleccionar una empresa antes de ver el historial de pedidos.';
+        return;
+      }
     }
 
     isLoadingHistory.value = true;
     historyError.value = '';
 
     try {
-      final response = isLimpiador
+      final response = isCleaner
           ? await _provider.getOrders(userId: _auth.userId)
-          : await _provider.getOrders(companyId: _auth.companyId);
+          : await _provider.getOrders();
 
       if (response.statusCode == 200) {
         final body = response.body;
@@ -196,11 +201,14 @@ class OrdersController extends GetxController
         }
         orderHistory.value = data
             .map(
-              (e) => OrderHistoryItemModel.fromJson(e as Map<String, dynamic>),
+              (e) =>
+                  OrderHistoryModel.fromJsonOrLegacy(e as Map<String, dynamic>),
             )
             .toList();
       } else {
-        historyError.value = 'Error al cargar el historial de pedidos';
+        historyError.value =
+            response.body?['message']?.toString() ??
+            'Error al cargar el historial de pedidos';
       }
     } catch (_) {
       historyError.value = 'No se pudo conectar con el servidor';

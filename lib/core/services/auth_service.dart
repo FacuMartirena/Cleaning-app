@@ -45,6 +45,10 @@ class AuthService extends GetxService {
 
   bool get isAdmin => userRole == 'Administrador';
 
+  /// Admin o Administrativo (pueden ver UsersView).
+  bool get isStaff =>
+      userRole == 'Administrador' || userRole == 'Administrativo';
+
   void saveToken(String token) {
     _box.write(Globals.storageToken, token);
     isLoggedIn.value = true;
