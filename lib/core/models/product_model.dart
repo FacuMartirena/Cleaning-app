@@ -23,6 +23,29 @@ class ProductModel {
     this.assetImagePath,
   });
 
+  ProductModel copyWith({
+    String? id,
+    String? name,
+    String? unitOfMeasure,
+    num? quantityAvailable,
+    String? description,
+    bool? active,
+    String? lastUpdated,
+    List<ProductImageModel>? images,
+    String? assetImagePath,
+  }) =>
+      ProductModel(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        unitOfMeasure: unitOfMeasure ?? this.unitOfMeasure,
+        quantityAvailable: quantityAvailable ?? this.quantityAvailable,
+        description: description ?? this.description,
+        active: active ?? this.active,
+        lastUpdated: lastUpdated ?? this.lastUpdated,
+        images: images ?? this.images,
+        assetImagePath: assetImagePath ?? this.assetImagePath,
+      );
+
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final imagesList = json['images'] as List<dynamic>?;
     final assetRaw = json['assetImage']?.toString();
